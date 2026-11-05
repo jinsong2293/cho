@@ -211,10 +211,10 @@
     expandedZonesBuilt = true;
     const scene = root.scene;
 
-    buildNorthNightFoodStage(scene, 0, -44);
-    buildWestLotusParkAndVillageYard(scene, -38, 0);
-    buildEastCraftVillageAndGarden(scene, 38, 0);
-    buildSouthFloatingMarketAndHill(scene, 0, 40);
+    buildNorthNightFoodStage(scene, 0, -85);
+    buildWestLotusParkAndVillageYard(scene, -78, 12);
+    buildEastCraftVillageAndGarden(scene, 78, -12);
+    buildSouthFloatingMarketAndHill(scene, 0, 42);
 
     // 4 Đại Khu Ngoại Ô trên Vành Đai 5x (±140m, ±130m)
     buildNorthwestKiteMeadow(scene, -140, -130);
@@ -1798,6 +1798,11 @@
   root.captureTownPhoto = captureTownPhoto;
   root.capturePostcardPng = captureTownPhoto;
   root.installPWAApp = installPWAApp;
+
+  // Tự động dựng 12 đại khu vực nếu 3D scene đã sẵn sàng
+  if (root.scene && !expandedZonesBuilt) {
+    buildExpandedTownZones();
+  }
 
   // Khởi tạo màn hình chào ngay khi script tải xong
   if (document.readyState === "loading") {

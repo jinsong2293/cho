@@ -674,6 +674,8 @@ io.on("connection", (socket) => {
     if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
     const res = world.updatePlayerHouse(userNickname, patch || {});
     if (ack) ack(res);
+    const p = world.players[userNickname];
+    const playerRoomId = (p && p.roomId) || "public-1";
     if (res.ok && playerRoomId) {
       io.to(playerRoomId).emit("house_updated", {
         nickname: userNickname,
@@ -688,6 +690,8 @@ io.on("connection", (socket) => {
     if (ack) ack(res);
     if (res.ok) {
       socket.emit("player_money_sync", { money: res.money });
+      const p = world.players[userNickname];
+      const playerRoomId = (p && p.roomId) || "public-1";
       if (playerRoomId) {
         io.to(playerRoomId).emit("house_updated", {
           nickname: userNickname,
@@ -703,6 +707,8 @@ io.on("connection", (socket) => {
     if (ack) ack(res);
     if (res.ok) {
       socket.emit("player_money_sync", { money: res.money });
+      const p = world.players[userNickname];
+      const playerRoomId = (p && p.roomId) || "public-1";
       if (playerRoomId) {
         io.to(playerRoomId).emit("house_updated", {
           nickname: userNickname,

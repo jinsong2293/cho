@@ -316,10 +316,18 @@
     // ----------------------------------------------------
     // 11. CÁC KHU VỰC MỞ RỘNG (Expanded Zones 5x & 20x)
     // ----------------------------------------------------
-    { type: "box", id: "night_cart_l", name: "Xe Đẩy Ẩm Thực Trái", minX: -7.1, maxX: -4.5, minZ: -43.6, maxZ: -42.0 },
-    { type: "box", id: "night_cart_r", name: "Xe Đẩy Ẩm Thực Phải", minX: 4.5, maxX: 7.1, minZ: -43.6, maxZ: -42.0 },
-    { type: "circle", id: "craft_pot", name: "Nồi Bánh Chưng Làng Nghề", x: 40, z: -2.5, radius: 1.2 },
+    { type: "box", id: "night_cart_l", name: "Xe Đẩy Ẩm Thực Trái", minX: -7.1, maxX: -4.5, minZ: -86.5, maxZ: -83.5 },
+    { type: "box", id: "night_cart_r", name: "Xe Đẩy Ẩm Thực Phải", minX: 4.5, maxX: 7.1, minZ: -86.5, maxZ: -83.5 },
+    { type: "circle", id: "craft_pot", name: "Nồi Bánh Chưng Làng Nghề", x: 80, z: -14.5, radius: 1.2 },
     { type: "circle", id: "fishing_hut", name: "Chòi Lá Câu Cá", x: -1.8, z: 42.5, radius: 1.4 },
+
+    // ----------------------------------------------------
+    // 12. KHU DÂN CƯ PHỐ MỚI & BẤT ĐỘNG SẢN (Housing & Real Estate Row)
+    // ----------------------------------------------------
+    { type: "box", id: "res_office", name: "Sàn Giao Dịch Bất Động Sản Thị Trấn", minX: 30.5, maxX: 37.5, minZ: 18.0, maxZ: 26.0 },
+    { type: "box", id: "res_house_1", name: "Nhà Phố Cư Dân 1 (Hội An)", minX: 43.5, maxX: 52.5, minZ: 34.0, maxZ: 42.0 },
+    { type: "box", id: "res_house_2", name: "Biệt Thự Vườn Cư Dân 2 (Nam Bộ)", minX: 59.5, maxX: 68.5, minZ: 17.5, maxZ: 26.5 },
+    { type: "box", id: "res_house_3", name: "Nhà Phố Cư Dân 3 (Indochine)", minX: 59.5, maxX: 68.5, minZ: 34.0, maxZ: 42.0 },
     // Đài Vọng Cảnh & Tháp Trống Đồi Diều Tây Bắc (-140, -138)
     { type: "circle", id: "nw_kite_pavilion", name: "Lầu Ngắm Diều Tây Bắc", x: -140, z: -138, radius: 3.2 },
     // Lầu Thưởng Trà Thung Lũng Hoa Đông Bắc (140, -138)

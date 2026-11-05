@@ -1511,6 +1511,7 @@ function createTextSprite(text, color = "#ffffff", bgColor = "rgba(20, 28, 46, 0
   sprite.scale.set(2.15, 0.44, 1);
   return sprite;
 }
+window.createTextSprite = createTextSprite;
 
 /* ==================== MÔ HÌNH SẠP HÀNG CHỢ VIỆT NAM ==================== */
 function createStallMesh(stallData) {

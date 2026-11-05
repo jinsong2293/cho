@@ -82,10 +82,12 @@ function init3D() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfed7aa);
   scene.fog = new THREE.FogExp2(0xfed7aa, 0.00085);
+  window.scene = scene;
 
   const isPortrait = window.innerWidth < window.innerHeight;
   camera = new THREE.PerspectiveCamera(isPortrait ? 60 : 48, window.innerWidth / window.innerHeight, 0.1, 3500);
   camera.position.set(0, 4.8, 26.5);
+  window.camera = camera;
 
   renderer = new THREE.WebGLRenderer({
     antialias: !isSoftwareGl,
@@ -100,6 +102,7 @@ function init3D() {
     renderer.toneMappingExposure = 1.15;
   }
   container.appendChild(renderer.domElement);
+  window.renderer = renderer;
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = !isSoftwareGl;
@@ -109,6 +112,7 @@ function init3D() {
   controls.maxDistance = 95;
   controls.target.set(0, 1.1, 19.0);
   controls.update();
+  window.controls = controls;
 
   hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x365314, 0.95);
   scene.add(hemiLight);
@@ -131,6 +135,8 @@ function init3D() {
   buildVietnameseMarketTown();
   if (typeof buildExpandedTownZones === 'function') {
     buildExpandedTownZones();
+  } else if (typeof window.buildExpandedTownZones === 'function') {
+    window.buildExpandedTownZones();
   }
   initTapTargetMarker();
   initParticles();
@@ -246,14 +252,15 @@ function onCanvasPointerDown(e) {
     }
 
     if ((typeof playerEstateGroup !== 'undefined' && playerEstateGroup && raycaster.intersectObjects([playerEstateGroup], true).length > 0) ||
+        (typeof residentialQuarterGroup !== 'undefined' && residentialQuarterGroup && raycaster.intersectObjects([residentialQuarterGroup], true).length > 0) ||
         (playerHouseGroup && raycaster.intersectObjects([playerHouseGroup], true).length > 0) ||
         (eastCommercialGroup && raycaster.intersectObjects([eastCommercialGroup], true).length > 0)) {
-      const targets = [playerEstateGroup, playerHouseGroup, eastCommercialGroup].filter(Boolean);
+      const targets = [playerEstateGroup, residentialQuarterGroup, playerHouseGroup, eastCommercialGroup].filter(Boolean);
       const hit = raycaster.intersectObjects(targets, true)[0];
       if (hit) {
         const pz = hit.point.z;
         const px = hit.point.x;
-        if (Math.hypot(px - 48, pz - 22) < 12) {
+        if (Math.hypot(px - 48, pz - 22) < 14 || Math.hypot(px - 34, pz - 22) < 8 || Math.hypot(px - 48, pz - 38) < 10 || Math.hypot(px - 64, pz - 22) < 10) {
           openHouseModal();
           return;
         }
@@ -858,6 +865,7 @@ function buildVietnameseMarketTown() {
   buildEastCommercialAvenue(38, 0);
   buildShuttlecockCourt(48, -16);
   buildPlayerHouse3D(48, 22);
+  buildResidentialNeighborhoodHouses();
   buildVietnameseUtilityPoles();
 
   buildTraditionalVillageGate(0, -52);
@@ -2787,6 +2795,7 @@ let playerEstateGroup = null;
 function buildPlayerHouse3D(x, z) {
   playerEstateGroup = new THREE.Group();
   playerEstateGroup.position.set(x, 0, z);
+  window.playerEstateGroup = playerEstateGroup;
 
   // Thảm cỏ sân vườn riêng biệt 16m x 16m
   const yardMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.85 });
@@ -2820,8 +2829,8 @@ function buildPlayerHouse3D(x, z) {
     "#fef08a",
     "rgba(15, 23, 42, 0.95)"
   );
-  gateSign.position.set(0, 3.4, -7.8);
-  gateSign.scale.set(4.6, 0.72, 1);
+  gateSign.position.set(0, 3.6, -7.8);
+  gateSign.scale.set(3.4, 0.55, 1);
   gateSign.name = "estateGateSign";
   playerEstateGroup.add(gateSign);
 
@@ -2860,25 +2869,83 @@ function updatePlayerHouse3D(level, config = {}) {
       "#fef08a",
       currentLvl === 0 ? "rgba(30, 41, 59, 0.95)" : "rgba(185, 28, 28, 0.95)"
     );
-    newSign.position.set(0, 3.4, -7.8);
-    newSign.scale.set(4.8, 0.72, 1);
+    newSign.position.set(0, 3.6, -7.8);
+    newSign.scale.set(3.4, 0.55, 1);
     newSign.name = "estateGateSign";
     playerEstateGroup.add(newSign);
   }
 
   if (currentLvl === 0) {
-    // Cọc mốc ranh giới đất cắm cờ đỏ
-    const marker = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.12, 0.16, 1.4, 8),
-      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.5 })
-    );
-    marker.position.set(0, 0.7, 1.0);
-    houseSub.add(marker);
+    // Khu Nhà Mẫu Biệt Thự & Mở Bán Đất Nền Có Sổ Đỏ
+    const brickMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.8 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c2b0c, roughness: 0.75 });
+    const tileMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.85 });
 
-    const banner = createTextSprite("🚩 ĐẤT NỀN ĐANG CHỜ KHAI MÓNG", "#fef08a", "rgba(185, 28, 28, 0.9)");
-    banner.position.set(0, 1.8, 1.0);
-    banner.scale.set(3.4, 0.6, 1);
+    const foundation = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.32, 6.2), brickMat);
+    foundation.position.set(0, 0.16, 1.2);
+    foundation.receiveShadow = true;
+    foundation.castShadow = true;
+    houseSub.add(foundation);
+
+    const steps = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.16, 1.4), stoneMat);
+    steps.position.set(0, 0.08, -2.1);
+    steps.receiveShadow = true;
+    houseSub.add(steps);
+
+    // 4 Cột gỗ lim nâng đỡ mái ngói nhà mẫu
+    [[-3.6, -1.4], [3.6, -1.4], [-3.6, 3.8], [3.6, 3.8]].forEach(([cx, cz]) => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 3.6, 12), woodMat);
+      col.position.set(cx, 1.8, cz);
+      col.castShadow = true;
+      houseSub.add(col);
+    });
+
+    // Mái ngói truyền thống 4 mái đao cong
+    const modelRoof = new THREE.Mesh(new THREE.ConeGeometry(6.6, 2.5, 4), tileMat);
+    modelRoof.rotation.y = Math.PI / 4;
+    modelRoof.position.set(0, 4.5, 1.2);
+    modelRoof.castShadow = true;
+    houseSub.add(modelRoof);
+
+    // Bàn sa bàn kiến trúc & bộ ấm chén tiếp khách xem nhà
+    const table = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.8, 1.4), woodMat);
+    table.position.set(0, 0.7, 1.2);
+    houseSub.add(table);
+
+    const blueprint = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.9), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+    blueprint.rotation.x = -Math.PI / 2;
+    blueprint.position.set(0, 1.11, 1.2);
+    houseSub.add(blueprint);
+
+    const teaPot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.25, 8), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 }));
+    teaPot.position.set(0.7, 1.22, 1.2);
+    houseSub.add(teaPot);
+
+    // 2 Chậu mai vàng đón khách
+    [[-4.2, -2.0], [4.2, -2.0]].forEach(([px, pz]) => {
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.3, 0.6, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      pot.position.set(px, 0.3, pz);
+      houseSub.add(pot);
+      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.65, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 }));
+      flower.position.set(px, 0.95, pz);
+      houseSub.add(flower);
+    });
+
+    // Biển hiệu Nhà Mẫu Biệt Thự & Mua Đất Xây Nhà
+    const banner = createTextSprite("🏡 NHÀ MẪU BIỆT THỰ · [CHẠM ĐỂ MUA ĐẤT SỔ ĐỎ & XÂY NHÀ]", "#fef08a", "rgba(185, 28, 28, 0.95)");
+    banner.position.set(0, 3.4, -2.1);
+    banner.scale.set(5.2, 0.85, 1);
     houseSub.add(banner);
+
+    // Mốc đá cắm mốc ranh giới lô đất có sổ đỏ
+    const stoneMarker = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.1, 0.4), stoneMat);
+    stoneMarker.position.set(-6.5, 0.55, -6.5);
+    houseSub.add(stoneMarker);
+
+    const redFlag = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.5, 4), new THREE.MeshBasicMaterial({ color: 0xdc2626 }));
+    redFlag.position.set(-6.5, 1.35, -6.5);
+    houseSub.add(redFlag);
   } else if (currentLvl === 1) {
     // Cấp 1: Nhà Mái Lá Quê Hương
     const bambooMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.9 });
@@ -3060,5 +3127,139 @@ function updatePlayerHouse3D(level, config = {}) {
   playerEstateGroup.add(houseSub);
 }
 
+/* ==========================================================================
+   KHU PHỐ CƯ DÂN & SÀN GIAO DỊCH BẤT ĐỘNG SẢN THỊ TRẤN
+   ========================================================================== */
+let residentialQuarterGroup = null;
+
+function buildResidentialNeighborhoodHouses() {
+  residentialQuarterGroup = new THREE.Group();
+  window.residentialQuarterGroup = residentialQuarterGroup;
+
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.75 });
+  const tileMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.55 });
+  const darkTile = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+
+  // 1. SÀN GIAO DỊCH BẤT ĐỘNG SẢN & NHÀ ĐẤT THỊ TRẤN (x: 34, z: 22)
+  const officeGroup = new THREE.Group();
+  officeGroup.position.set(34, 0, 22);
+
+  const officeWallMat = new THREE.MeshStandardMaterial({ color: 0xfef9c3, roughness: 0.65 });
+  const officeBody = new THREE.Mesh(new THREE.BoxGeometry(7.0, 5.8, 8.0), officeWallMat);
+  officeBody.position.set(0, 2.9, 0);
+  officeBody.castShadow = true;
+  officeBody.receiveShadow = true;
+  officeGroup.add(officeBody);
+
+  const officeRoof = new THREE.Mesh(new THREE.ConeGeometry(5.8, 2.5, 4), tileMat);
+  officeRoof.rotation.y = Math.PI / 4;
+  officeRoof.position.set(0, 6.9, 0);
+  officeRoof.castShadow = true;
+  officeGroup.add(officeRoof);
+
+  // Cửa kính lớn mặt tiền
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, transparent: true, opacity: 0.65 });
+  const officeGlass = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.2), glassMat);
+  officeGlass.position.set(0, 1.8, -4.01);
+  officeGlass.rotation.y = Math.PI;
+  officeGroup.add(officeGlass);
+
+  const officeSign = createTextSprite("🏢 SÀN GIAO DỊCH BẤT ĐỘNG SẢN & NHÀ ĐẤT", "#fef08a", "rgba(15, 23, 42, 0.95)");
+  officeSign.position.set(0, 4.4, -4.1);
+  officeSign.scale.set(4.6, 0.75, 1);
+  officeGroup.add(officeSign);
+
+  const subSign = createTextSprite("[CHẠM ĐỂ MUA ĐẤT SỔ ĐỎ & CHỌN MẪU NHÀ]", "#38bdf8", "rgba(15, 23, 42, 0.9)");
+  subSign.position.set(0, 3.6, -4.1);
+  subSign.scale.set(3.8, 0.6, 1);
+  officeGroup.add(subSign);
+  residentialQuarterGroup.add(officeGroup);
+
+  // 2. NHÀ PHỐ CƯ DÂN 1 — PHONG CÁCH HỘI AN (x: 48, z: 38)
+  const house1Group = new THREE.Group();
+  house1Group.position.set(48, 0, 38);
+
+  const hoiAnWall = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 });
+  const house1Body = new THREE.Mesh(new THREE.BoxGeometry(8.5, 5.5, 7.5), hoiAnWall);
+  house1Body.position.set(0, 2.75, 0);
+  house1Body.castShadow = true;
+  house1Body.receiveShadow = true;
+  house1Group.add(house1Body);
+
+  const house1Roof = new THREE.Mesh(new THREE.ConeGeometry(6.8, 2.6, 4), tileMat);
+  house1Roof.rotation.y = Math.PI / 4;
+  house1Roof.position.set(0, 6.7, 0);
+  house1Roof.castShadow = true;
+  house1Group.add(house1Roof);
+
+  // Ban công hoa giấy rực rỡ
+  const balcony = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.35, 1.8), woodMat);
+  balcony.position.set(0, 2.8, -3.8);
+  house1Group.add(balcony);
+
+  const flowers = new THREE.Mesh(new THREE.SphereGeometry(1.1, 10, 8), new THREE.MeshStandardMaterial({ color: 0xec4899 }));
+  flowers.position.set(-2.2, 3.4, -3.8);
+  house1Group.add(flowers);
+
+  const house1Sign = createTextSprite("🏡 NHÀ PHỐ HOA GIẤY · CƯ DÂN SỐ 1", "#fef08a", "rgba(30, 41, 59, 0.92)");
+  house1Sign.position.set(0, 4.4, -3.9);
+  house1Sign.scale.set(3.8, 0.65, 1);
+  house1Group.add(house1Sign);
+  residentialQuarterGroup.add(house1Group);
+
+  // 3. BIỆT THỰ VƯỜN CƯ DÂN 2 — NAM BỘ (x: 64, z: 22)
+  const house2Group = new THREE.Group();
+  house2Group.position.set(64, 0, 22);
+
+  const house2Wall = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.65 });
+  const house2Body = new THREE.Mesh(new THREE.BoxGeometry(8.5, 5.0, 8.5), house2Wall);
+  house2Body.position.set(0, 2.5, 0);
+  house2Body.castShadow = true;
+  house2Body.receiveShadow = true;
+  house2Group.add(house2Body);
+
+  const house2Roof = new THREE.Mesh(new THREE.ConeGeometry(7.0, 2.8, 4), tileMat);
+  house2Roof.rotation.y = Math.PI / 4;
+  house2Roof.position.set(0, 6.3, 0);
+  house2Roof.castShadow = true;
+  house2Group.add(house2Roof);
+
+  const porch2 = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.25, 2.2), woodMat);
+  porch2.position.set(0, 0.12, -4.3);
+  house2Group.add(porch2);
+
+  const house2Sign = createTextSprite("🏡 BIỆT THỰ VƯỜN · CƯ DÂN SỐ 2", "#fef08a", "rgba(30, 41, 59, 0.92)");
+  house2Sign.position.set(0, 4.2, -4.4);
+  house2Sign.scale.set(3.8, 0.65, 1);
+  house2Group.add(house2Sign);
+  residentialQuarterGroup.add(house2Group);
+
+  // 4. NHÀ PHỐ CƯ DÂN 3 — INDOCHINE CÁCH TÂN (x: 64, z: 38)
+  const house3Group = new THREE.Group();
+  house3Group.position.set(64, 0, 38);
+
+  const house3Wall = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5 });
+  const house3Body = new THREE.Mesh(new THREE.BoxGeometry(8.5, 5.6, 7.5), house3Wall);
+  house3Body.position.set(0, 2.8, 0);
+  house3Body.castShadow = true;
+  house3Body.receiveShadow = true;
+  house3Group.add(house3Body);
+
+  const house3Roof = new THREE.Mesh(new THREE.ConeGeometry(6.8, 2.7, 4), darkTile);
+  house3Roof.rotation.y = Math.PI / 4;
+  house3Roof.position.set(0, 6.8, 0);
+  house3Roof.castShadow = true;
+  house3Group.add(house3Roof);
+
+  const house3Sign = createTextSprite("🏡 NHÀ PHỐ INDOCHINE · CƯ DÂN SỐ 3", "#fef08a", "rgba(30, 41, 59, 0.92)");
+  house3Sign.position.set(0, 4.4, -3.9);
+  house3Sign.scale.set(4.0, 0.68, 1);
+  house3Group.add(house3Sign);
+  residentialQuarterGroup.add(house3Group);
+
+  scene.add(residentialQuarterGroup);
+}
+
 window.buildPlayerHouse3D = buildPlayerHouse3D;
 window.updatePlayerHouse3D = updatePlayerHouse3D;
+window.buildResidentialNeighborhoodHouses = buildResidentialNeighborhoodHouses;
