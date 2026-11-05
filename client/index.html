@@ -13,20 +13,25 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở">
 <meta name="twitter:description" content="Thế giới xã hội 3D trực tuyến đậm bản sắc văn hóa Việt Nam trên trình duyệt.">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/open-playground.css">
-<script src="/libs/three.min.js"></script>
-<script src="/libs/OrbitControls.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<script src="/shared/world-layout.js"></script>
-<script src="/shared/colliders.js"></script>
-<script src="/shared/festivals.js"></script>
-<script src="/shared/weather.js"></script>
-<script src="/i18n.js"></script>
+<link rel="stylesheet" href="css/open-playground.css">
+<script src="libs/three.min.js"></script>
+<script src="libs/OrbitControls.js"></script>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script>
+  if (typeof io === 'undefined') {
+    document.write('<script src="socket.io/socket.io.js"><\/script>');
+  }
+</script>
+<script src="shared/world-layout.js"></script>
+<script src="shared/colliders.js"></script>
+<script src="shared/festivals.js"></script>
+<script src="shared/weather.js"></script>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -1059,11 +1064,11 @@
 </div>
 
 <!-- Modular Client Architecture -->
-<script src="/js/state-audio.js"></script>
-<script src="/js/world-3d.js"></script>
-<script src="/js/entities-3d.js"></script>
-<script src="/js/controls-loop.js"></script>
-<script src="/js/network-ui.js"></script>
-<script src="/js/town-expansion.js"></script>
+<script src="js/state-audio.js"></script>
+<script src="js/world-3d.js"></script>
+<script src="js/entities-3d.js"></script>
+<script src="js/controls-loop.js"></script>
+<script src="js/network-ui.js"></script>
+<script src="js/town-expansion.js"></script>
 </body>
 </html>

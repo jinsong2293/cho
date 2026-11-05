@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=client/">
+  <title>Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở</title>
+  <script>
+    // Tự động chuyển tiếp mượt mà vào thư mục client/ kèm đầy đủ query params và hash
+    const targetUrl = "client/" + window.location.search + window.location.hash;
+    window.location.replace(targetUrl);
+  </script>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(245, 158, 11, 0.2);
+      border-top-color: #f59e0b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    a {
+      color: #fbbf24;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="loader"></div>
+  <h2>🏮 Chợ Thị Trấn Việt Nam 3D</h2>
+  <p>Đang chuyển hướng vào phố chợ... Nếu trình duyệt không tự chuyển, <a href="client/">bấm vào đây để vào chơi</a>.</p>
+</body>
+</html>

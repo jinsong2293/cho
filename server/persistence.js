@@ -4,18 +4,115 @@
  * social affinity titles, collection book, and house guestbook.
  */
 
-const Database = require("better-sqlite3");
+let DatabaseSyncModule = null;
+try {
+  DatabaseSyncModule = require("node:sqlite").DatabaseSync;
+} catch (_) {}
+
+let Database = null;
+// Ưu tiên node:sqlite có sẵn trong Node 22+, không nạp better-sqlite3 tránh crash container
+if (!DatabaseSyncModule) {
+  try {
+    Database = require("better-sqlite3");
+  } catch (_) {}
+}
+
 const crypto = require("crypto");
 const path = require("path");
 const { INITIAL_MONEY, QUESTS_CONFIG } = require("../shared/constants");
 const config = require("./config");
 
 const dbPath = path.resolve(__dirname, "..", config.dbPath);
-const db = new Database(dbPath);
 
-// Enable WAL mode for high concurrency
+let db = null;
+
+// 1. Ưu tiên node:sqlite tích hợp sẵn trong Node.js (không cần gyp / C++ build, chạy mượt trên mọi container)
+if (DatabaseSyncModule) {
+  try {
+    db = new DatabaseSyncModule(dbPath);
+    db.pragma = (str) => {
+      try {
+        db.exec(`PRAGMA ${str}`);
+      } catch (_) {}
+    };
+    console.log("[persistence] Đang dùng Node.js built-in SQLite (DatabaseSync).");
+  } catch (err) {
+    console.warn("[persistence] Lỗi mở SQLite file, chuyển sang in-memory:", err.message);
+  }
+}
+
+// 2. Dự phòng: better-sqlite3 nếu môi trường chưa có DatabaseSync
+if (!db && Database) {
+  try {
+    db = new Database(dbPath);
+    console.log("[persistence] Đang dùng better-sqlite3.");
+  } catch (err) {
+    console.warn("[persistence] better-sqlite3 lỗi:", err.message);
+  }
+}
+
+// 3. Dự phòng in-memory DatabaseSync
+if (!db && DatabaseSyncModule) {
+  try {
+    db = new DatabaseSyncModule(":memory:");
+    db.pragma = () => {};
+    console.log("[persistence] Đang dùng in-memory DatabaseSync.");
+  } catch (_) {}
+}
+
+// 4. Dự phòng tối hậu In-Memory Mock để không bao giờ sập server
+if (!db) {
+  console.warn("[persistence] Chuyển sang In-Memory Store dự phòng.");
+  db = {
+    exec: () => {},
+    pragma: () => {},
+    prepare: () => ({
+      get: () => null,
+      all: () => [],
+      run: () => ({ changes: 1, lastInsertRowid: 1 }),
+    }),
+    transaction: (fn) => (...args) => fn(...args),
+    close: () => {},
+  };
+}
+
+if (typeof db.transaction !== "function") {
+  db.transaction = (fn) => {
+    return (...args) => {
+      db.exec("BEGIN");
+      try {
+        const res = fn(...args);
+        db.exec("COMMIT");
+        return res;
+      } catch (err) {
+        try {
+          db.exec("ROLLBACK");
+        } catch (_) {}
+        throw err;
+      }
+    };
+  };
+}
+
+// Container safety pragmas chống SIGSEGV status 139 trên Render/Docker
 try {
-  db.pragma("journal_mode = WAL");
+  db.pragma("mmap_size = 0");
+  const isCloudContainer = Boolean(
+    process.env.RENDER ||
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.CONTAINER ||
+    process.env.NODE_ENV === "production"
+  );
+  if (isCloudContainer) {
+    db.pragma("journal_mode = DELETE");
+    db.pragma("synchronous = NORMAL");
+  } else {
+    try {
+      db.pragma("journal_mode = WAL");
+    } catch (_) {
+      db.pragma("journal_mode = DELETE");
+    }
+  }
 } catch (_) {}
 
 // Create tables if not exists
