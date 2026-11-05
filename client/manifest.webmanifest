@@ -1,0 +1,21 @@
+{
+  "name": "Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở",
+  "short_name": "Chợ Việt 3D",
+  "description": "Thế giới 3D nhiều người chơi mang bản sắc văn hóa Việt Nam: dạo chợ, trà đá vỉa hè, đá cầu, thả đèn hoa đăng và kết bạn trong dưới 10 giây.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1E1810",
+  "theme_color": "#D9381E",
+  "categories": ["games", "social", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

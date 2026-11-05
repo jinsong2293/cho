@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1810"/>
+      <stop offset="100%" stop-color="#3B2514"/>
+    </linearGradient>
+    <linearGradient id="lantern" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF5238"/>
+      <stop offset="50%" stop-color="#D9381E"/>
+      <stop offset="100%" stop-color="#9E210E"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0A8"/>
+      <stop offset="50%" stop-color="#F4B41A"/>
+      <stop offset="100%" stop-color="#C98A09"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="218" fill="none" stroke="url(#gold)" stroke-width="6" opacity="0.45"/>
+  <!-- Hanging cord -->
+  <line x1="256" y1="36" x2="256" y2="102" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"/>
+  <!-- Conical Hat (Non La) silhouette at top -->
+  <path d="M108 164 L256 76 L404 164 Z" fill="url(#gold)" opacity="0.92"/>
+  <path d="M108 164 Q256 184 404 164" fill="none" stroke="#8C5B08" stroke-width="6"/>
+  <!--Hoi An Lantern body -->
+  <ellipse cx="256" cy="276" rx="118" ry="104" fill="url(#lantern)" stroke="url(#gold)" stroke-width="8"/>
+  <ellipse cx="256" cy="276" rx="76" ry="104" fill="none" stroke="url(#gold)" stroke-width="4" opacity="0.65"/>
+  <ellipse cx="256" cy="276" rx="34" ry="104" fill="none" stroke="url(#gold)" stroke-width="4" opacity="0.65"/>
+  <!-- Lantern caps -->
+  <rect x="206" y="160" width="100" height="22" rx="8" fill="url(#gold)"/>
+  <rect x="212" y="370" width="88" height="22" rx="8" fill="url(#gold)"/>
+  <!-- Center Lotus Emblem -->
+  <circle cx="256" cy="276" r="32" fill="url(#gold)"/>
+  <text x="256" y="289" font-family="sans-serif" font-weight="800" font-size="38" fill="#7A1809" text-anchor="middle">CHỢ</text>
+  <!-- Tassels -->
+  <line x1="236" y1="392" x2="230" y2="458" stroke="#FF5238" stroke-width="8" stroke-linecap="round"/>
+  <line x1="256" y1="392" x2="256" y2="470" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"/>
+  <line x1="276" y1="392" x2="282" y2="458" stroke="#FF5238" stroke-width="8" stroke-linecap="round"/>
+</svg>

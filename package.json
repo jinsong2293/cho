@@ -1,0 +1,36 @@
+{
+  "name": "cho-thi-tran-viet-nam",
+  "version": "2.0.0",
+  "description": "Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở & Thị Trấn Sống (Open 3D Vietnamese Social Town)",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "build": "node -c server/index.js && node -c server/world.js && node -c server/persistence.js && node -c server/moderation.js && node -c server/seats.js && node -c server/activities/index.js && node -c shared/constants.js && node -c shared/world-layout.js && node -c shared/colliders.js && node -c shared/festivals.js && node -c shared/weather.js && node -c client/i18n.js && node -c client/js/state-audio.js && node -c client/js/world-3d.js && node -c client/js/entities-3d.js && node -c client/js/controls-loop.js && node -c client/js/network-ui.js && node -c client/js/town-expansion.js",
+    "lint": "npm run build",
+    "test": "node scripts/smoke-test.js && node scripts/test-i18n.js && node scripts/test-baucua-round.js && node scripts/test-weather-consistency.js && node scripts/test-colliders.js && node scripts/test-mobile-ui.js && node scripts/test-gameplay-loa-phuong.js",
+    "test:gameplay": "node scripts/test-gameplay-loa-phuong.js"
+  },
+  "keywords": [
+    "vietnam",
+    "threejs",
+    "multiplayer",
+    "socketio",
+    "social-town",
+    "3d-game"
+  ],
+  "author": "Chợ Thị Trấn Việt Nam Team",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "socket.io-client": "^4.8.4"
+  }
+}

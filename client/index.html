@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#b91c1c">
+<title>Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở & Thị Trấn Sống</title>
+<meta name="description" content="Thế giới xã hội 3D trực tuyến đậm bản sắc văn hóa Việt Nam: dạo phố chợ, uống trà đá vỉa hè, đá cầu kiểng, bầu cua, thả đèn hoa đăng và giao lưu bạn bè.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở & Thị Trấn Sống">
+<meta property="og:description" content="Vào chơi ngay trong 5 giây trên Điện Thoại & Máy Tính! Gặp gỡ bạn bè, uống trà đá, đá cầu, nghe loa phường, ngắm pháo hoa đêm hội và khám phá 9 khu phố Việt Nam.">
+<meta property="og:image" content="/icon.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Chợ Thị Trấn Việt Nam 3D — Sân Chơi Mở">
+<meta name="twitter:description" content="Thế giới xã hội 3D trực tuyến đậm bản sắc văn hóa Việt Nam trên trình duyệt.">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/open-playground.css">
+<script src="/libs/three.min.js"></script>
+<script src="/libs/OrbitControls.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/shared/world-layout.js"></script>
+<script src="/shared/colliders.js"></script>
+<script src="/shared/festivals.js"></script>
+<script src="/shared/weather.js"></script>
+<script src="/i18n.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Hiệu ứng Thời tiết động phủ lên màn hình (Nắng gắt tỏa nhiệt / Mưa rào / Hoa bay) -->
+<div id="weather-overlay"></div>
+
+<!-- Hiệu ứng chữ tiền bay lên từ vị trí 3D -->
+<div id="floating-popups"></div>
+
+<div id="ui-layer">
+  <!-- Top HUD: Single row <= 38px, strict hierarchy -->
+  <header id="top-hud" class="interactive">
+    <div class="hud-brand">
+      <span class="brand-title">🏮 CHỢ</span>
+      <span id="hud-zone-badge" class="merchant-rank" onclick="openGoToModal()" title="Chạm để mở bảng Đi Tới Khu Vực">📍 Khu Chợ Trung Tâm</span>
+    </div>
+
+    <div class="hud-center-stats tabular-nums">
+      <button id="hud-profile-btn" class="stat-pill" onclick="openProfileModal()" title="Xem Hồ Sơ & Đổi Trang Phục">
+        👤 <span id="hud-nickname">Bà con</span>
+      </button>
+      <span class="stat-sep">·</span>
+      <span class="stat-pill stat-money">💰 <span id="hud-money">15,000đ</span></span>
+      <span class="stat-sep">·</span>
+      <button id="hud-weather-chip" class="stat-pill weather-pill" onclick="cycleWeatherMode()" title="Chạm hoặc bấm phím T để đổi thời tiết">
+        <span id="hud-weather-icon">☀️</span> <span id="hud-weather-temp">32°C</span> · <span id="hud-weather-name">Nắng Đẹp</span>
+      </button>
+    </div>
+
+    <div class="hud-actions">
+      <button class="hud-btn" onclick="openQuestsModal()" title="Nhiệm Vụ Hàng Ngày (Q)">
+        <span>🎯 Nhiệm Vụ</span>
+        <span id="hud-quest-dot" class="badge-dot" style="display:none;"></span>
+      </button>
+      <button id="hud-btn-loa" class="hud-btn" onclick="openLoaPhuongModal()" title="Bản Tin Loa Phường Thị Trấn (L)">
+        <span>📢 Loa Phường</span>
+      </button>
+      <button id="hud-btn-chat" class="hud-btn" onclick="toggleChat()" title="Trò Chuyện & Bong Bóng Thoại 3D (C)">
+        <span>💬 Trò Chuyện</span>
+      </button>
+      <button class="hud-btn" onclick="openSettingsModal()" title="Cài Đặt & Trợ Năng">
+        <span>⚙️</span>
+      </button>
+      <button id="hud-menu-btn" class="hud-btn hud-menu-btn" onclick="openFullAppMenuModal()" title="Mở danh mục 27 tính năng thị trấn">
+        <span>☰ Menu</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Minimap Card: Fixed top right -->
+  <aside id="minimap-card" class="interactive" onclick="toggleMinimapSize()" title="Chạm để phóng to / thu nhỏ bản đồ">
+    <canvas id="minimap-canvas" width="136" height="136"></canvas>
+    <div id="minimap-label">BẢN ĐỒ PHỐ CHỢ</div>
+  </aside>
+
+  <!-- Trò Chuyện & Bà Tám Chợ: Bot-Left -->
+  <aside id="chat-widget" class="interactive">
+    <div id="chat-header" onclick="toggleChat()">
+      <span id="chat-header-title" data-i18n="hud_chat_title">💬 TRÒ CHUYỆN & BÀ TÁM CHỢ</span>
+      <span id="chat-toggle-label">Thu gọn ▾</span>
+    </div>
+    <div id="chat-filter-tabs">
+      <button class="chip-btn active" id="chat-tab-all" onclick="setChatFilterTab('all')" data-i18n="chat_tab_all">Tất cả</button>
+      <button class="chip-btn" id="chat-tab-nearby" onclick="setChatFilterTab('nearby')" data-i18n="chat_tab_nearby">Quanh đây (18m)</button>
+      <button class="chip-btn" id="chat-tab-system" onclick="setChatFilterTab('system')" data-i18n="chat_tab_system">Hệ thống</button>
+    </div>
+    <div id="chat-messages">
+      <div class="chat-msg system" data-channel="system">Chào mừng bà con! Nhắn tin hoặc chạm câu nhanh để hiện bong bóng thoại 3D!</div>
+    </div>
+    <div id="quick-chat-bar" class="quick-chat-bar"></div>
+    <div id="chat-input-row">
+      <button id="chat-channel-btn" class="chip-btn" onclick="toggleChatChannel()" title="Chuyển kênh">🌐 Toàn Thị Trấn</button>
+      <input type="text" id="chat-input" data-i18n-placeholder="chat_placeholder" placeholder="Nhắn tin với bà con..." maxlength="150" onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="btn-chat-send" onclick="sendChat()" data-i18n="chat_send">Gửi</button>
+    </div>
+  </aside>
+
+  <!-- Auto-dismissing Event Banner Toast (Center-Top) -->
+  <div id="event-toast-slot">
+    <div id="event-banner" class="interactive" role="alert" aria-live="polite">
+      <span class="loa-badge">📢 LOA PHƯỜNG</span>
+      <span id="event-title">Thời tiết thị trấn</span>
+      <span class="event-sep">·</span>
+      <span id="event-desc">Chào mừng bà con ghé chợ!</span>
+      <button class="toast-close" onclick="dismissEventBanner()" title="Đóng thông báo">✕</button>
+    </div>
+  </div>
+
+  <!-- Collapsible Achievement Toast (Retracts after 4s, never overlaps stats) -->
+  <div id="achievement-toast" class="achievement-toast interactive" style="display:none;">
+    <div class="ach-icon">🏆</div>
+    <div class="ach-content">
+      <div class="ach-title" id="ach-title">THỊ TRẤN PHỒN VINH</div>
+      <div class="ach-desc" id="ach-desc">Đã hoàn thành mục tiêu ngày!</div>
+    </div>
+    <button class="toast-close" onclick="dismissAchievementToast()">✕</button>
+  </div>
+
+  <!-- Lớp Điều Khiển Cảm Ứng Cho Điện Thoại (Dynamic Joystick & Action Pad) -->
+  <div id="mobile-controls-layer">
+    <!-- Vùng chạm nổi ngón cái trái (Floating Touch Surface) -->
+    <div id="mobile-touch-left" aria-hidden="true"></div>
+
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-stick"></div>
+      </div>
+      <div id="joystick-hint">KÉO ĐỂ ĐI</div>
+    </div>
+
+    <!-- Cụm nút thao tác ngón cái phải -->
+    <div id="mobile-action-pad" class="interactive">
+      <div class="mob-pad-row">
+        <button type="button" class="mob-btn" id="mob-btn-jump" onclick="handleMobileJump()" aria-label="Nhảy">
+          <span class="icon">🎪</span>
+          <span>Nhảy</span>
+        </button>
+        <button type="button" class="mob-btn" id="mob-btn-bike" onclick="toggleHoverboard()" aria-label="Xe máy">
+          <span class="icon">🛵</span>
+          <span id="mob-bike-label">Xe máy</span>
+        </button>
+      </div>
+      <div class="mob-pad-row">
+        <button type="button" class="mob-btn primary-interact" id="mob-btn-interact" onclick="handleContextAction()" aria-label="Tương tác nhanh">
+          <span class="icon" id="mob-action-icon">💬</span>
+          <span id="mob-action-label">Trò chuyện</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Control Dock: Contextual Action + 4 Icon Buttons (Height 36px) -->
+  <nav id="bottom-dock-wrapper" class="interactive">
+    <div id="dock-bar">
+      <button class="dock-icon-btn" id="dock-btn-bike" onclick="toggleHoverboard()" title="Đi Xe Máy (Space)">
+        <span class="icon">🛵</span>
+        <span class="label">Xe máy</span>
+      </button>
+      <button class="dock-icon-btn" onclick="kickShuttlecockNow()" title="Đá Cầu Kiểng (K)">
+        <span class="icon">🪶</span>
+        <span class="label">Đá cầu</span>
+      </button>
+
+      <!-- Contextual Action Button (Auto adapts based on proximity) -->
+      <button id="btn-context-action" class="btn-context-action" onclick="handleContextAction()">
+        <span id="context-action-icon">💬</span>
+        <span id="context-action-label">Trò Chuyện (Enter)</span>
+      </button>
+
+      <button class="dock-icon-btn" onclick="openGoToModal()" title="Đi Nhanh Tới Khu Vực">
+        <span class="icon">🧭</span>
+        <span class="label">Đi tới</span>
+      </button>
+      <button class="dock-icon-btn" onclick="openFullAppMenuModal()" title="Toàn bộ 27 tính năng">
+        <span class="icon">☰</span>
+        <span class="label">Tính năng</span>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- Modal: Thông Tin Tiểu Thương & Hồ Sơ Cá Nhân -->
+<div id="modal-profile" class="modal-overlay">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <h3>👤 THÔNG TIN TIỂU THƯƠNG</h3>
+      <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.05); padding:14px; border-radius:14px; border:1px solid var(--border);">
+        <div style="font-size:42px;">👒</div>
+        <div style="flex:1;">
+          <div style="font-size:18px; font-weight:800; color:var(--gold);" id="profile-name-display">Bà con phố chợ</div>
+          <div style="font-size:12.5px; color:var(--text-muted); margin-top:2px;" id="hud-rank-badge">Tiểu Thương Mới</div>
+        </div>
+      </div>
+
+      <div class="profile-stats-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
+        <div class="profile-stat-box" style="background:rgba(0,0,0,0.3); border:1px solid rgba(251,191,36,0.2); border-radius:12px; padding:10px 12px;">
+          <div style="font-size:11.5px; color:var(--text-muted);">💰 Tài sản tiền mặt</div>
+          <div style="font-size:16px; font-weight:800; color:var(--gold);" id="profile-money-val">15,000đ</div>
+        </div>
+        <div class="profile-stat-box" style="background:rgba(0,0,0,0.3); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:10px 12px;">
+          <div style="font-size:11.5px; color:var(--text-muted);">🎒 Hàng trong kho</div>
+          <div style="font-size:16px; font-weight:800; color:var(--mint);"><span id="hud-inv-count">0</span> món</div>
+        </div>
+        <div class="profile-stat-box" style="background:rgba(0,0,0,0.3); border:1px solid rgba(56,189,248,0.2); border-radius:12px; padding:10px 12px;">
+          <div style="font-size:11.5px; color:var(--text-muted);">🏪 Sạp sở hữu</div>
+          <div style="font-size:16px; font-weight:800; color:#38bdf8;"><span id="hud-stalls-count">0</span> gian hàng</div>
+        </div>
+        <div class="profile-stat-box" style="background:rgba(0,0,0,0.3); border:1px solid rgba(244,63,94,0.2); border-radius:12px; padding:10px 12px;">
+          <div style="font-size:11.5px; color:var(--text-muted);">🗓️ Thời gian</div>
+          <div style="font-size:16px; font-weight:800; color:#f43f5e;"><span id="hud-day">Ngày 1</span> (<span id="hud-time-icon" style="cursor:pointer;" onclick="toggleTimeOfDayTest()">☀️ Sáng</span>)</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn-context-action" style="flex:1; justify-content:center; padding:9px 12px; font-size:13px;" onclick="closeModal('modal-profile'); openCustomizationModal();">
+          👤 Đổi Trang Phục
+        </button>
+        <button class="btn-context-action" style="flex:1; justify-content:center; padding:9px 12px; font-size:13px; background:linear-gradient(135deg, #059669, #10b981);" onclick="closeModal('modal-profile'); openHouseModal();">
+          🏠 Căn Nhà Riêng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Toàn Bộ 27 Tính Năng Thị Trấn (5 Nhóm Gọn Gàng) -->
+<div id="modal-full-menu" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px;">
+    <div class="modal-header">
+      <h3>☰ TẤT CẢ TÍNH NĂNG PHỐ CHỢ (27)</h3>
+      <button class="modal-close" onclick="closeModal('modal-full-menu')">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:75vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
+      
+      <!-- Nhóm 1: Giao Lưu & Cộng Đồng -->
+      <div>
+        <div style="color:var(--gold); font-size:12.5px; font-weight:800; margin-bottom:8px; text-transform:uppercase;">
+          🤝 Giao Lưu & Cộng Đồng
+        </div>
+        <div class="menu-items-grid">
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); toggleChat();">
+            <span class="icon">📢</span>
+            <div><div class="title">Loa Phường & Trò Chuyện</div><div class="desc">Bong bóng 3D & Chat toàn thị trấn</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openFriendsModal();">
+            <span class="icon">👫</span>
+            <div><div class="title">Bạn Bè Phố Chợ (<span id="dock-friends-count">0</span>)</div><div class="desc">Kết bạn, gửi quà, theo dõi bạn</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openCommunityEventsModal();">
+            <span class="icon">📋</span>
+            <div><div class="title">Bảng Tin Thị Trấn</div><div class="desc">Sự kiện do bà con tự khởi xướng</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); copyInviteLink();">
+            <span class="icon">💌</span>
+            <div><div class="title">Mời Bạn Vào Chơi</div><div class="desc">Gửi link phòng chơi chung</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); enterPhotoMode();">
+            <span class="icon">📸</span>
+            <div><div class="title">Chụp Bưu Thiếp</div><div class="desc">Lưu ảnh kỷ niệm phố chợ 3D</div></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Nhóm 2: Buôn Bán & Kinh Doanh -->
+      <div>
+        <div style="color:var(--mint); font-size:12.5px; font-weight:800; margin-bottom:8px; text-transform:uppercase;">
+          🏪 Buôn Bán & Kinh Doanh
+        </div>
+        <div class="menu-items-grid">
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); interactNearest();">
+            <span class="icon">🏪</span>
+            <div><div class="title">Quản Lý Sạp (E)</div><div class="desc">Thuê sạp, bày hàng tre, nâng cấp</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openWholesaleModal();">
+            <span class="icon">🚚</span>
+            <div><div class="title">Chợ Đầu Mối (B)</div><div class="desc">Nhập sỉ nông sản, trái cây, ẩm thực</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openInventoryModal();">
+            <span class="icon">🎒</span>
+            <div><div class="title">Kho Hàng Cá Nhân (I)</div><div class="desc">Xem túi đồ & vật phẩm dự trữ</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openLeaderboardModal();">
+            <span class="icon">🏆</span>
+            <div><div class="title">Bảng Vàng Phú Hộ (L)</div><div class="desc">Vinh danh triệu phú chợ Việt</div></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Nhóm 3: Mini-Game Dân Gian -->
+      <div>
+        <div style="color:#38bdf8; font-size:12.5px; font-weight:800; margin-bottom:8px; text-transform:uppercase;">
+          🎲 Trò Chơi Dân Gian
+        </div>
+        <div class="menu-items-grid">
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); kickShuttlecockNow();">
+            <span class="icon">🪶</span>
+            <div><div class="title">Đá Cầu Kiểng (K)</div><div class="desc">Tâng cầu kiểng tính combo tập thể</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openBauCuaModal();">
+            <span class="icon">🎲</span>
+            <div><div class="title">Bầu Cua Tôm Cá</div><div class="desc">Lắc 3 xúc xắc dân gian truyền thống</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openFishingModal();">
+            <span class="icon">🎣</span>
+            <div><div class="title">Câu Cá Bến Sông</div><div class="desc">Thư giãn giật cá chép vàng, tôm càng</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openGachaModal();">
+            <span class="icon">🎪</span>
+            <div><div class="title">Lô Tô Hội Chợ (G)</div><div class="desc">Quay số rinh lộc may mắn</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openTeaTableModal();">
+            <span class="icon">☕</span>
+            <div><div class="title">Quán Trà Đá Vỉa Hè</div><div class="desc">Ngồi ghế nhựa đỏ nhâm nhi trò chuyện</div></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Nhóm 4: Lễ Hội & Khám Phá -->
+      <div>
+        <div style="color:#c084fc; font-size:12.5px; font-weight:800; margin-bottom:8px; text-transform:uppercase;">
+          🎆 Lễ Hội & Khám Phá
+        </div>
+        <div class="menu-items-grid">
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); triggerFireworkCelebration();">
+            <span class="icon">🎆</span>
+            <div><div class="title">Bắn Pháo Hoa (F)</div><div class="desc">Hiệu ứng pháo hoa rực sáng bầu trời</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openTownActivitiesModal();">
+            <span class="icon">🎪</span>
+            <div><div class="title">Hoạt Động & Ước Nguyện</div><div class="desc">Sân khấu mở, kéo co, hoa đăng</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); callPetDog();">
+            <span class="icon">🐕</span>
+            <div><div class="title">Gọi Chó Vàng</div><div class="desc">Thú cưng trung thành chạy lon ton</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); toggleHoverboard();">
+            <span class="icon">🛵</span>
+            <div><div class="title">Đi Xe Máy (Space)</div><div class="desc">Lướt nhanh khắp các góc phố chợ</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); sendEmote('funny_meme');">
+            <span class="icon">📢</span>
+            <div><div class="title">Tiếng Rao Mại Dô</div><div class="desc">Phát biểu cảm âm thanh vui nhộn</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); sendEmote('cyber_dance');">
+            <span class="icon">🕺</span>
+            <div><div class="title">Nhảy Hội Phố Chợ</div><div class="desc">Vũ điệu rộn ràng mừng ngày mới</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); sendEmote('money_rain');">
+            <span class="icon">🧧</span>
+            <div><div class="title">Tung Lì Xì May Mắn</div><div class="desc">Tặng lộc cho bạn bè xung quanh</div></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Nhóm 5: Cá Nhân & Cài Đặt -->
+      <div>
+        <div style="color:#f59e0b; font-size:12.5px; font-weight:800; margin-bottom:8px; text-transform:uppercase;">
+          ⚙️ Cá Nhân & Cài Đặt
+        </div>
+        <div class="menu-items-grid">
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openCustomizationModal();">
+            <span class="icon">👤</span>
+            <div><div class="title">Trang Phục 3D</div><div class="desc">Áo dài, áo bà ba, nón lá, khăn rằn</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openHouseModal();">
+            <span class="icon">🏠</span>
+            <div><div class="title">Căn Nhà Riêng</div><div class="desc">Trang trí nhà & mở cửa đón bạn</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openQuestsModal();">
+            <span class="icon">📜</span>
+            <div><div class="title">Nhiệm Vụ Hàng Ngày (Q)</div><div class="desc">Làm việc kiếm thêm tiền thưởng</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openGoToModal();">
+            <span class="icon">🧭</span>
+            <div><div class="title">Đi Tới Khu Vực</div><div class="desc">Dịch chuyển nhanh tới 9 phân khu</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); cycleWeatherMode();">
+            <span class="icon">🌦️</span>
+            <div><div class="title">Đổi Thời Tiết (T)</div><div class="desc">Nắng đẹp, mưa rào, hoa xuân, nắng gắt</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); toggleAudio();">
+            <span class="icon">🔊</span>
+            <div><div class="title">Âm Thanh Thị Trấn</div><div class="desc">Bật/tắt tiếng chợ, loa phường</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openSettingsModal();">
+            <span class="icon">⚙️</span>
+            <div><div class="title">Cài Đặt Đồ Họa & Trợ Năng</div><div class="desc">Độ mượt, cỡ chữ, phím điều khiển</div></div>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite">Thông báo</div>
+
+<!-- Join Screen Modal (Vào chơi dưới 10 giây) -->
+<div id="join-screen" class="modal-overlay active">
+  <div class="join-card join-v2">
+    <div class="join-top">
+      <button type="button" id="lang-switch-btn" class="join-lang" onclick="toggleLanguage()" aria-label="Ngôn ngữ / Language">🌐 VI / EN</button>
+    </div>
+    <h1 data-i18n="join_title">🏮 Chợ Thị Trấn Việt Nam</h1>
+    <p class="join-sub" data-i18n="join_sub">Dạo chợ, uống trà đá, trò chuyện và chơi cùng bạn bè.</p>
+
+    <!-- Bước 1: Tên -->
+    <section class="join-step">
+      <label class="join-label" for="nickname-input">
+        <span class="join-num">1</span><span data-i18n="join_step_name">Tên của bạn</span>
+      </label>
+      <div class="join-name-row">
+        <input type="text" id="nickname-input" class="join-input" data-i18n-placeholder="join_name_placeholder" placeholder="Nhập tên của bạn" maxlength="18" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" onkeydown="if(event.key==='Enter') joinGame()">
+        <button type="button" class="join-dice" onclick="randomizeJoinNickname()" aria-label="Đổi tên ngẫu nhiên" title="Đổi tên ngẫu nhiên">🎲</button>
+      </div>
+      <!-- Gợi ý tên khi trùng nickname (JS bật/tắt bằng style.display) -->
+      <div id="nickname-suggestions-box" style="display:none; margin-top:8px; background:rgba(239,68,68,0.16); border:1px solid rgba(251,191,36,0.5); border-radius:10px; padding:8px;">
+        <div style="font-size:13px; color:#fde68a; margin-bottom:6px;">Tên này đã có chủ! Chạm để chọn tên gợi ý:</div>
+        <div id="nickname-suggestions-list" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;"></div>
+      </div>
+    </section>
+
+    <!-- Bước 2: Nhân vật (JS dựng 6 thẻ) -->
+    <section class="join-step">
+      <div class="join-label" id="join-char-label">
+        <span class="join-num">2</span><span data-i18n="join_step_char">Chọn nhân vật</span>
+      </div>
+      <div id="onboarding-preset-grid" class="preset-grid" aria-labelledby="join-char-label"></div>
+    </section>
+
+    <!-- Nút chính: duy nhất một hành động nổi bật -->
+    <button type="button" class="join-btn join-cta" onclick="joinGame()" data-i18n="join_cta">▶ VÀO CHỢ</button>
+    <div id="join-online-badge" class="join-online">🟢 Đang có bà con dạo chợ</div>
+    <p class="join-hint">
+      <span class="hint-desktop" data-i18n="join_hint_desktop">Đi bằng WASD hoặc phím mũi tên · Bấm vào người khác để chào</span>
+      <span class="hint-touch" data-i18n="join_hint_touch">Kéo cần gạt để đi · Chạm vào người khác để chào</span>
+    </p>
+
+    <!-- Tùy chọn nâng cao: mặc định thu gọn -->
+    <details class="join-more" id="join-more">
+      <summary data-i18n="join_more">Có mã phòng của bạn bè?</summary>
+      <label for="room-code-input" data-i18n="join_room_label">Mã phòng (bạn bè gửi cho bạn)</label>
+      <input type="text" id="room-code-input" class="join-input" data-i18n-placeholder="join_room_placeholder" placeholder="Ví dụ: ABCD" maxlength="12" autocomplete="off" autocapitalize="characters">
+      <label for="recovery-code-input" data-i18n="join_recovery_label">Mã khôi phục (chỉ dùng khi đổi máy)</label>
+      <input type="text" id="recovery-code-input" class="join-input" data-i18n-placeholder="join_recovery_placeholder" placeholder="6 ký tự" maxlength="8" autocomplete="off" autocapitalize="characters">
+    </details>
+
+    <div class="join-footer">
+      <button type="button" class="join-link" onclick="openModal('modal-rules')" data-i18n="rules_link">📜 Luật chơi vui vẻ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Chợ Đầu Mối (Wholesale Market) -->
+<div id="modal-wholesale" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🚚 BẾN XE & GHE HÀNG CHỢ ĐẦU MỐI (GIÁ SỈ)</h3>
+      <button class="modal-close" onclick="closeModal('modal-wholesale')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="wholesale-event-notice" style="font-size:12.5px; color:#fef08a; background:rgba(220,38,38,0.22); border:1px solid rgba(251,191,36,0.4); padding:8px 12px; border-radius:8px;"></div>
+      <div id="wholesale-filter-bar" class="filter-tabs"></div>
+      <div id="wholesale-goods-list" class="goods-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Quản Lý Sạp Hàng (Stall Management) -->
+<div id="modal-stall" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="stall-modal-title">🏪 SẠP HÀNG CHỢ VIỆT</h3>
+      <button class="modal-close" onclick="closeModal('modal-stall')">✕</button>
+    </div>
+    <div class="modal-body" id="stall-modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Gánh Lô Tô Hội Chợ (Gacha) -->
+<div id="modal-gacha" class="modal-overlay">
+  <div class="modal-box" style="max-width:460px; text-align:center;">
+    <div class="modal-header">
+      <h3>🎪 GÁNH LÔ TÔ HỘI CHỢ THỊ TRẤN</h3>
+      <button class="modal-close" onclick="closeModal('modal-gacha')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:52px; margin:4px 0;">🏮</div>
+      <p style="font-size:13.5px; color:var(--text-muted); line-height:1.5;">
+        <i>"Cờ ra con mấy, con mấy gì đây!"</i><br>
+        Mua 1 vé Lô Tô chỉ <b style="color:var(--gold)">2,000đ</b> để thử vận may trúng <b>Độc Đắc Hụi Chợ 8,000đ</b>, <b>Trầm Hương Phố Cổ (13,500đ)</b>, <b>Sầu Riêng Ri6</b> hoặc <b>Combo Phở Bò + Cà Phê Sữa Đá</b>!
+      </p>
+      <div id="gacha-result-box" style="background:rgba(255,255,255,0.05); border:1.5px solid var(--border); border-radius:14px; padding:16px; min-height:84px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <span style="color:var(--text-muted); font-size:13px;">Nhấn nút bên dưới để bốc số Lô Tô ngay!</span>
+      </div>
+      <button class="join-btn" onclick="spinGachaNow()">
+        🎪 BỐC SỐ LÔ TÔ NGAY (2,000đ)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bầu Cua Tôm Cá Hội Chợ (Folk Mini-Game) -->
+<div id="modal-bau-cua" class="modal-overlay">
+  <div class="modal-box" style="max-width:540px;">
+    <div class="modal-header">
+      <h3>🎲 SỚI BẦU CUA TÔM CÁ HỘI CHỢ</h3>
+      <button class="modal-close" onclick="closeModal('modal-bau-cua')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="baucua-status-box">
+        <div>
+          <span>Vòng #<b id="bc-round-id" style="color:var(--gold)">1</b></span>
+          <span style="margin: 0 6px">·</span>
+          <span id="bc-status-text" style="color:#34d399">Đang nhận cược</span>
+        </div>
+        <div>
+          <span>Đếm ngược: <b id="bc-timer-text" style="color:#fde68a; font-size:15px;">18s</b></span>
+        </div>
+      </div>
+
+      <div class="baucua-dice-display">
+        <div class="baucua-die" id="bc-die-1">🦌<span style="font-size:10px">Nai</span></div>
+        <div class="baucua-die" id="bc-die-2">🎃<span style="font-size:10px">Bầu</span></div>
+        <div class="baucua-die" id="bc-die-3">🐓<span style="font-size:10px">Gà</span></div>
+      </div>
+
+      <div style="font-size:12.5px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+        <span>Chọn mức tiền cược:</span>
+        <span>Tiền của bạn: <b id="bc-my-money" style="color:var(--gold)">15,000đ</b></span>
+      </div>
+
+      <div class="baucua-chips-bar">
+        <button class="chip-btn active" onclick="selectBcChip(500)">500đ</button>
+        <button class="chip-btn" onclick="selectBcChip(1000)">1.000đ</button>
+        <button class="chip-btn" onclick="selectBcChip(2000)">2.000đ</button>
+        <button class="chip-btn" onclick="selectBcChip(5000)">5.000đ</button>
+        <button class="chip-btn" onclick="selectBcChip(10000)">10.000đ</button>
+      </div>
+
+      <!-- Bàn 6 Cửa Đặt Bầu Cua -->
+      <div class="baucua-grid">
+        <div class="baucua-cell" id="bc-cell-nai" onclick="placeBauCuaBet('nai')">
+          <span class="baucua-icon">🦌</span>
+          <span class="baucua-name">Nai</span>
+          <span class="baucua-badge" id="bc-bet-nai">0đ</span>
+        </div>
+        <div class="baucua-cell" id="bc-cell-bau" onclick="placeBauCuaBet('bau')">
+          <span class="baucua-icon">🎃</span>
+          <span class="baucua-name">Bầu</span>
+          <span class="baucua-badge" id="bc-bet-bau">0đ</span>
+        </div>
+        <div class="baucua-cell" id="bc-cell-ga" onclick="placeBauCuaBet('ga')">
+          <span class="baucua-icon">🐓</span>
+          <span class="baucua-name">Gà</span>
+          <span class="baucua-badge" id="bc-bet-ga">0đ</span>
+        </div>
+        <div class="baucua-cell" id="bc-cell-ca" onclick="placeBauCuaBet('ca')">
+          <span class="baucua-icon">🐟</span>
+          <span class="baucua-name">Cá</span>
+          <span class="baucua-badge" id="bc-bet-ca">0đ</span>
+        </div>
+        <div class="baucua-cell" id="bc-cell-cua" onclick="placeBauCuaBet('cua')">
+          <span class="baucua-icon">🦀</span>
+          <span class="baucua-name">Cua</span>
+          <span class="baucua-badge" id="bc-bet-cua">0đ</span>
+        </div>
+        <div class="baucua-cell" id="bc-cell-tom" onclick="placeBauCuaBet('tom')">
+          <span class="baucua-icon">🦐</span>
+          <span class="baucua-name">Tôm</span>
+          <span class="baucua-badge" id="bc-bet-tom">0đ</span>
+        </div>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-muted); background:rgba(0,0,0,0.3); border-radius:10px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+        <span>📜 Lịch sử xúc xắc:</span>
+        <span id="bc-history-text" style="color:#fde68a; font-weight:700;">🦌 🎃 🐓 | 🐟 🦀 🦐</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tương Tác Thân Thiện Giữa Người Chơi (Player Social Interaction) -->
+<div id="modal-player-interact" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <h3 data-i18n="social_title">🤝 GIAO LƯU TIỂU THƯƠNG</h3>
+      <button class="modal-close" onclick="closeModal('modal-player-interact')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="social-target-card">
+        <div class="social-avatar">👒</div>
+        <div style="flex:1">
+          <div style="font-size:16px; font-weight:800; color:#38bdf8;" id="social-target-name">Bà con phố chợ</div>
+          <div style="font-size:12px; color:var(--text-muted);" id="social-target-status">Đang buôn bán quanh chợ thị trấn</div>
+        </div>
+      </div>
+
+      <div class="social-actions-list">
+        <button class="social-btn" style="border-color:rgba(16,185,129,0.65); background:linear-gradient(135deg, rgba(16,185,129,0.22), rgba(5,150,105,0.22));" onclick="waveHelloToPlayer()">
+          <span>👋 Vẫy Tay Chào Làm Quen (+2 Điểm Thân Thiết)</span>
+          <span style="color:#4ade80; font-size:12px;">+150đ Lộc</span>
+        </button>
+        <button class="social-btn" style="border-color:rgba(56,189,248,0.6); background:linear-gradient(135deg, rgba(14,165,233,0.22), rgba(59,130,246,0.22));" onclick="addFriendNow()">
+          <span>👫 Kết Bạn Tri Kỷ Phố Chợ (Theo Dõi Vị Trí)</span>
+          <span style="color:#38bdf8; font-size:12px;">+300đ Lộc</span>
+        </button>
+        <button class="social-btn coffee" onclick="doPlayerAction('coffee')">
+          <span>☕ Mời Ly Cà Phê Sữa Đá Sài Gòn</span>
+          <span style="color:var(--gold); font-size:12px;">500đ</span>
+        </button>
+        <button class="social-btn" onclick="doPlayerAction('cheers')">
+          <span>🍻 Cụng Ly Trà Đá / Bia Hơi ("1, 2, 3 DÔ!")</span>
+          <span style="color:#34d399; font-size:12px;">Miễn phí</span>
+        </button>
+        <button class="social-btn lixi" onclick="toggleLixiInput()">
+          <span>🧧 Trao Bao Lì Xì May Mắn Buôn May Bán Đắt</span>
+          <span style="color:#fb7185; font-size:12px;">Lộc Phát</span>
+        </button>
+
+        <div id="social-lixi-panel" style="display:none; background:rgba(220,38,38,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:12px; padding:12px; flex-direction:column; gap:8px;">
+          <div style="display:flex; gap:6px;">
+            <button class="chip-btn active" onclick="selectLixiAmount(1000)">1.000đ</button>
+            <button class="chip-btn" onclick="selectLixiAmount(2000)">2.000đ</button>
+            <button class="chip-btn" onclick="selectLixiAmount(5000)">5.000đ</button>
+          </div>
+          <input type="text" id="social-lixi-wish" class="join-input" style="font-size:13px; padding:8px 12px; text-align:left; margin-bottom:4px;" placeholder="Lời chúc may mắn (ví dụ: Chúc bạn buôn may bán đắt!)">
+          <button class="join-btn" style="padding:8px 12px; font-size:13px;" onclick="sendLixiNow()">Trao Lì Xì Ngay 🧧</button>
+        </div>
+
+        <button class="social-btn" onclick="doPlayerAction('ride_motorcycle')">
+          <span>🛵 Bấm Còi Rủ Kẹp 2 Lượn Xe Máy Dạo Chợ</span>
+          <span style="color:#60a5fa; font-size:12px;">Vui nhộn</span>
+        </button>
+
+        <div style="display:flex; gap:8px; margin-top:4px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">
+          <button class="btn-small" style="background:rgba(239,68,68,0.2); border-color:rgba(239,68,68,0.5); color:#fca5a5;" onclick="blockTargetPlayerNow()" data-i18n="social_block">🚫 Chặn / Bỏ Chặn</button>
+          <button class="btn-small" style="background:rgba(245,158,11,0.2); border-color:rgba(245,158,11,0.5); color:#fde68a;" onclick="reportTargetPlayerNow()" data-i18n="social_report">🚩 Báo Cáo Vi Phạm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Quán Trà Đá & Bia Hơi Vỉa Hè (Sidewalk Tea Table) -->
+<div id="modal-tea-table" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px; text-align:center;">
+    <div class="modal-header">
+      <h3>☕ QUÁN TRÀ ĐÁ VỈA HÈ & HƯỚNG DƯƠNG</h3>
+      <button class="modal-close" onclick="closeModal('modal-tea-table')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:46px; margin:4px 0;">🪑</div>
+      <p style="font-size:13.5px; color:var(--text-muted); line-height:1.55;">
+        Nét văn hóa bình dân thân thương của chợ Việt! Cùng ngồi trên những chiếc <b>ghế nhựa đỏ Song Long</b>, nhâm nhi cốc trà đá mát rượi, cắn hạt hướng dương và rôm rả tán gẫu với bạn bè khắp thị trấn!
+      </p>
+
+      <div style="background:rgba(255,255,255,0.05); border:1.5px solid var(--border); border-radius:14px; padding:12px; text-align:left;">
+        <div style="font-size:12.5px; font-weight:800; color:var(--gold); margin-bottom:6px;">Bà con đang ngồi quây quần:</div>
+        <div id="tea-table-players-list" style="display:flex; flex-wrap:wrap; gap:6px;">
+          <span class="chip-btn">Chưa có ai ngồi, hãy là người mở hàng!</span>
+        </div>
+      </div>
+
+      <button id="tea-sit-btn" class="join-btn" style="background:linear-gradient(135deg, #0284c7, #38bdf8);" onclick="toggleSitTeaTableNow()">
+        🪑 NGỒI XUỐNG GHẾ NHỰA ĐỎ (+200đ Lộc Nước Chè)
+      </button>
+      <button class="btn-action" style="width:100%; justify-content:center; padding:11px;" onclick="doAllTableCheer()">
+        🍻 Cụng Ly Trà Đá Cả Bàn ("1, 2, 3 DÔ!")
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bến Sông Câu Cá Thư Giãn (Fishing Mini-Game) -->
+<div id="modal-fishing" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px; text-align:center;">
+    <div class="modal-header">
+      <h3>🎣 BẾN SÔNG CÂU CÁ MIỀN QUÊ</h3>
+      <button class="modal-close" onclick="closeModal('modal-fishing')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:52px; margin:4px 0;" id="fishing-anim-icon">🎣</div>
+      <p style="font-size:13.5px; color:var(--text-muted); line-height:1.55;" id="fishing-status-desc">
+        Thả hồn bên dòng sông xanh uốn lượn, nghe tiếng nước róc rách và thử vận may giật cần bắt <b>Cá Lóc Đồng, Cá Chép Vàng, Cá Rô Phi, Tôm Càng Xanh</b> hay thậm chí <b>Rùa Vàng Độc Đắc 8.888đ</b>!
+      </p>
+
+      <div id="fishing-result-card" style="background:rgba(255,255,255,0.05); border:1.5px solid var(--border); border-radius:14px; padding:16px; min-height:86px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <span style="color:#38bdf8; font-size:13.5px; font-weight:700;">Nhấn "QUĂNG CẦN CÂU CÁ" để bắt đầu buông cần!</span>
+      </div>
+
+      <button id="btn-cast-fishing" class="join-btn" style="background:linear-gradient(135deg, #0284c7, #06b6d4);" onclick="startFishingCast()">
+        🎣 QUĂNG CẦN CÂU CÁ NGAY
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bảng Tin Hoạt Động Do Người Chơi Tự Tạo (User-Generated Community Events) -->
+<div id="modal-community-events" class="modal-overlay">
+  <div class="modal-box" style="max-width:620px;">
+    <div class="modal-header">
+      <h3>📋 BẢNG TIN HOẠT ĐỘNG THỊ TRẤN</h3>
+      <button class="modal-close" onclick="closeModal('modal-community-events')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:var(--text-muted);">Hoạt động giao lưu do chính bà con khởi xướng:</span>
+        <button class="btn-action btn-gold" style="padding:6px 14px; font-size:12px;" onclick="toggleCreateEventForm()">
+          ➕ TẠO HOẠT ĐỘNG MỚI
+        </button>
+      </div>
+
+      <!-- Form tạo sự kiện do người chơi tự đề xuất -->
+      <div id="create-event-panel" style="display:none; background:rgba(251,191,36,0.08); border:1.5px solid var(--gold); border-radius:14px; padding:14px; flex-direction:column; gap:8px;">
+        <h4 style="color:var(--gold); font-size:14px;">📝 Khởi Xướng Hoạt Động Mới</h4>
+        <input type="text" id="event-input-title" class="join-input" style="text-align:left; font-size:13.5px; padding:9px 12px; margin-bottom:2px;" placeholder="Tên hoạt động (vd: Tối nay tụ tập quán cà phê, Thi câu cá, Ai cờ cá ngựa không?)" maxlength="48">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+          <input type="text" id="event-input-time" class="join-input" style="text-align:left; font-size:13px; padding:8px 12px; margin-bottom:0;" placeholder="Thời gian (vd: Tối nay 20h)" maxlength="24">
+          <input type="text" id="event-input-loc" class="join-input" style="text-align:left; font-size:13px; padding:8px 12px; margin-bottom:0;" placeholder="Địa điểm (vd: Quán Trà Đá, Bến Sông)" maxlength="32">
+        </div>
+        <textarea id="event-input-desc" class="join-input" style="text-align:left; font-size:13px; padding:8px 12px; margin-bottom:4px; height:60px; resize:none;" placeholder="Lời nhắn gửi tới bạn bè trong thị trấn..." maxlength="150"></textarea>
+        <button class="join-btn" style="padding:9px; font-size:13.5px;" onclick="submitNewCommunityEvent()">Đăng Lên Bảng Tin Thị Trấn 📢</button>
+      </div>
+
+      <!-- Danh sách sự kiện cộng đồng -->
+      <div id="community-events-list" style="display:flex; flex-direction:column; gap:10px; max-height:360px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bản Tin Phát Thanh Loa Phường (Town Loudspeaker Bulletins) -->
+<div id="modal-loa-phuong" class="modal-overlay">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-header" style="background: linear-gradient(135deg, rgba(185,28,28,0.95), rgba(153,27,27,0.95)); border-bottom: 2px solid #fbbf24;">
+      <h3 style="color:#fef08a; display:flex; align-items:center; gap:8px;">
+        <span>📢</span> BẢN TIN PHÁT THANH LOA PHƯỜNG
+      </h3>
+      <button class="modal-close" onclick="closeModal('modal-loa-phuong')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+      
+      <!-- Thông Báo Khẩn / Thời Tiết Hiện Thời -->
+      <div style="background:rgba(251,191,36,0.1); border:1.5px solid #fbbf24; border-radius:12px; padding:12px 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px;">🌤️ TÌNH HÌNH THỜI TIẾT & KHÍ HẬU</span>
+          <span id="loa-weather-badge" style="font-size:11px; background:rgba(239,68,68,0.25); color:#fca5a5; padding:2px 8px; border-radius:999px; font-weight:700;">Đang phát thanh</span>
+        </div>
+        <div id="loa-modal-weather-title" style="font-size:15px; font-weight:800; color:#fffbeb; margin-bottom:4px;">
+          Thời tiết thị trấn
+        </div>
+        <div id="loa-modal-weather-desc" style="font-size:13px; color:#fde68a; line-height:1.4;">
+          Đang cập nhật bản tin phát thanh mới nhất từ ban quản lý chợ...
+        </div>
+      </div>
+
+      <!-- Tin Nóng Thị Trường & Ghe Hàng Cập Bến -->
+      <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(251,191,36,0.25); border-radius:12px; padding:12px 14px;">
+        <div style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+          🚤 TIN NÓNG CHỢ ĐẦU MỐI & BẾN SÔNG
+        </div>
+        <div id="loa-modal-market-info" style="font-size:13px; color:#e2e8f0; line-height:1.4;">
+          Nông sản tươi ngon từ đồng bằng sông Cửu Long và Tây Nguyên liên tục cập bến!
+        </div>
+      </div>
+
+      <!-- Hoạt Động & Sự Kiện Đang Diễn Ra -->
+      <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(251,191,36,0.25); border-radius:12px; padding:12px 14px;">
+        <div style="font-size:11px; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+          🏮 HOẠT ĐỘNG THỊ TRẤN ĐANG CHỜ BẠN
+        </div>
+        <ul style="font-size:12.5px; color:#cbd5e1; line-height:1.6; padding-left:18px;">
+          <li>🎲 <strong>Sới Bầu Cua Tôm Cá:</strong> Mở cược liên tục, lắc bát vui nhộn!</li>
+          <li>🎣 <strong>Câu cá Bến Sông:</strong> Cá Chép Vàng & Cá Lăng đang cắn câu.</li>
+          <li>🍵 <strong>Trà Đá Vỉa Hè:</strong> Ngồi cùng bạn bè nhận lì xì kết nối +120đ.</li>
+          <li>🏛️ <strong>Nhà Văn Hóa:</strong> Xem bảng tin cộng đồng & tự tạo lời rủ rê bạn bè.</li>
+        </ul>
+      </div>
+
+      <!-- Nút hành động nhanh -->
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:4px;">
+        <button class="hud-btn" onclick="replayLoaPhuongAnnouncement()" style="padding:8px 14px; font-size:12.5px; background:rgba(251,191,36,0.18); border-color:#fbbf24; color:#fef08a;">
+          <span>🔊 Phát Lại Thông Báo</span>
+        </button>
+        <button class="join-btn" onclick="closeModal('modal-loa-phuong'); openCommunityEventsModal();" style="padding:8px 16px; font-size:12.5px; width:auto;">
+          📋 Mở Bảng Tin Cộng Đồng
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tùy Chỉnh Nhân Vật 3D (Character Customization) -->
+<div id="modal-customization" class="modal-overlay">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <h3>👤 TỦ ĐỒ TIỂU THƯƠNG 3D</h3>
+      <button class="modal-close" onclick="closeModal('modal-customization')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+        Chọn diện mạo và trang phục mang đậm bản sắc phố chợ Việt Nam:
+      </div>
+
+      <div>
+        <label style="font-size:13px; font-weight:800; color:var(--gold); display:block; margin-bottom:6px;">👒 Chọn Nón / Phụ Kiện Đầu:</label>
+        <div class="filter-tabs" id="custom-hat-tabs">
+          <button class="filter-tab active" onclick="selectCustomHat('non_la')">👒 Nón Lá Truyền Thống</button>
+          <button class="filter-tab" onclick="selectCustomHat('helmet')">🛵 Mũ Bảo Hiểm Xe Máy</button>
+          <button class="filter-tab" onclick="selectCustomHat('bandana')">🎀 Khăn Rằn Nam Bộ</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label style="font-size:13px; font-weight:800; color:var(--gold); display:block; margin-bottom:6px;">👘 Trang Phục:</label>
+        <div class="filter-tabs" id="custom-outfit-tabs">
+          <button class="filter-tab active" onclick="selectCustomOutfit('ba_ba')">Áo Bà Ba Dân Dã</button>
+          <button class="filter-tab" onclick="selectCustomOutfit('ao_dai')">Áo Dài Thướt Tha</button>
+          <button class="filter-tab" onclick="selectCustomOutfit('ao_thun')">Áo Thun Hiện Đại</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label style="font-size:13px; font-weight:800; color:var(--gold); display:block; margin-bottom:6px;">🎨 Màu Sắc Áo:</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="chip-btn" style="background:#f59e0b; color:#1e1b18;" onclick="selectCustomColor(0xf59e0b)">Vàng Mai</button>
+          <button class="chip-btn" style="background:#dc2626; color:#ffffff;" onclick="selectCustomColor(0xdc2626)">Đỏ Tết</button>
+          <button class="chip-btn" style="background:#059669; color:#ffffff;" onclick="selectCustomColor(0x059669)">Xanh Ngọc</button>
+          <button class="chip-btn" style="background:#0284c7; color:#ffffff;" onclick="selectCustomColor(0x0284c7)">Xanh Dương</button>
+          <button class="chip-btn" style="background:#9333ea; color:#ffffff;" onclick="selectCustomColor(0x9333ea)">Tím Huế</button>
+          <button class="chip-btn" style="background:#f8fafc; color:#1e1b18;" onclick="selectCustomColor(0xf8fafc)">Trắng Sáng</button>
+        </div>
+      </div>
+
+      <button class="join-btn" style="margin-top:12px;" onclick="applyCustomizationNow()">LƯU DIỆN MẠO MỚI</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nhà Riêng & Trang Trí Nội Thất + Sổ Lưu Bút (Player House) -->
+<div id="modal-house" class="modal-overlay">
+  <div class="modal-box" style="max-width:520px; text-align:center;">
+    <div class="modal-header">
+      <h3>🏠 NHÀ RIÊNG & SỔ LƯU BÚT</h3>
+      <button class="modal-close" onclick="closeModal('modal-house')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:44px; margin:2px 0;">🏡</div>
+      <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+        Căn nhà mái ngói đỏ ấm cúng tại <b>Phố Dân Cư</b>! Trang trí tổ ấm, cài đặt quyền riêng tư và xem sổ lưu bút bạn bè ghé thăm!
+      </p>
+
+      <div style="background:rgba(255,255,255,0.05); border:1.5px solid var(--border); border-radius:14px; padding:12px; text-align:left;">
+        <h4 style="color:var(--gold); font-size:13.5px; margin-bottom:8px;">🎨 Trang Trí & Quyền Mở Cửa:</h4>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12.5px;">
+            <span>Chế độ mở cửa:</span>
+            <div style="display:flex; gap:6px;">
+              <button class="chip-btn active" onclick="setHousePrivacy('public')">🌐 Công Khai</button>
+              <button class="chip-btn" onclick="setHousePrivacy('friends')">👫 Bạn Bè</button>
+              <button class="chip-btn" onclick="setHousePrivacy('private')">🔒 Riêng Tư</button>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12.5px;">
+            <span>Màu tường nhà:</span>
+            <div style="display:flex; gap:6px;">
+              <button class="chip-btn" onclick="decorateHouse('wall', '#fef08a')">Vàng Hội An</button>
+              <button class="chip-btn" onclick="decorateHouse('wall', '#e2e8f0')">Trắng Ngà</button>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12.5px;">
+            <span>Bộ bàn ghế phòng khách:</span>
+            <div style="display:flex; gap:6px;">
+              <button class="chip-btn" onclick="decorateHouse('furniture', 'Sập Gụ Tủ Chè')">Sập Gụ Tủ Chè</button>
+              <button class="chip-btn" onclick="decorateHouse('furniture', 'Bàn Tre Quê Hương')">Bàn Tre Mộc</button>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12.5px;">
+            <span>Chậu cây trước hiên:</span>
+            <div style="display:flex; gap:6px;">
+              <button class="chip-btn" onclick="decorateHouse('tree', 'Hoa Mai Vàng')">Mai Vàng</button>
+              <button class="chip-btn" onclick="decorateHouse('tree', 'Cây Cau Bến Nước')">Cây Cau</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sổ lưu bút khách ghé thăm -->
+      <div style="background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:14px; padding:12px; text-align:left;">
+        <h4 style="color:#38bdf8; font-size:13.5px; margin-bottom:6px;">📖 Sổ Lưu Bút Ghé Thăm Nhà:</h4>
+        <div id="house-guestbook-list" style="display:flex; flex-direction:column; gap:6px; max-height:110px; overflow-y:auto; margin-bottom:8px;">
+          <div style="font-size:12px; color:var(--text-muted);">Chưa có lời nhắn nào. Hãy mời bạn bè ghé nhà ghi lưu bút nhé!</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="house-guestbook-input" class="join-input" style="margin-bottom:0; padding:7px 10px; font-size:12.5px; text-align:left; flex:1;" placeholder="Viết lời chúc vào sổ lưu bút nhà..." maxlength="120">
+          <button class="btn-action btn-gold" style="padding:7px 12px; font-size:12px;" onclick="signHouseGuestbookNow()">✍️ Ghi Sổ</button>
+        </div>
+      </div>
+
+      <button class="join-btn" style="background:linear-gradient(135deg, #059669, #10b981);" onclick="inviteFriendsToHouse()">
+        💌 MỜI BẠN BÈ VÀO CHƠI NHÀ (Gửi Thông Báo Lên Chat)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Kho Cá Nhân (Inventory) -->
+<div id="modal-inventory" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🎒 KHO HÀNG TIỂU THƯƠNG</h3>
+      <button class="modal-close" onclick="closeModal('modal-inventory')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="inventory-list" class="goods-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nhiệm Vụ (Quests) -->
+<div id="modal-quests" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📜 NHIỆM VỤ PHỐ CHỢ</h3>
+      <button class="modal-close" onclick="closeModal('modal-quests')">✕</button>
+    </div>
+    <div class="modal-body" id="quests-list"></div>
+  </div>
+</div>
+
+<!-- Modal: Bảng Phú Hộ (Leaderboard) -->
+<div id="modal-leaderboard" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🏆 BẢNG PHÚ HỘ THỊ TRẤN</h3>
+      <button class="modal-close" onclick="closeModal('modal-leaderboard')">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="leader-table tabular-nums">
+        <thead>
+          <tr>
+            <th>Hạng</th>
+            <th>Tên Tiểu Thương</th>
+            <th style="text-align:right">Tài Sản</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Danh Sách Bạn Bè & Phòng Riêng (Friends List & Private Room) -->
+<div id="modal-friends" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header">
+      <h3>👫 HỘI BẠN THÂN & PHÒNG RIÊNG</h3>
+      <button class="modal-close" onclick="closeModal('modal-friends')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.35); border-radius:12px; padding:10px 12px; flex-wrap:wrap;">
+        <div style="font-size:12.5px;">
+          <span>Phòng hiện tại: <b id="current-room-label" style="color:var(--gold)">Phố Chợ Chung</b></span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-action btn-gold" style="padding:5px 10px; font-size:11.5px;" onclick="createPrivateRoomNow()">🔒 Tạo Phòng Bạn Bè</button>
+          <button class="btn-action btn-primary" style="padding:5px 10px; font-size:11.5px;" onclick="copyInviteLink()">🔗 Copy Link Mời</button>
+        </div>
+      </div>
+
+      <div style="font-size:12.5px; color:var(--text-muted); line-height:1.45;">
+        Chạm vào người chơi khác trong thị trấn để kết bạn, hoặc nhập tên bạn bè bên dưới để theo dõi vị trí và chạy tới hội ngộ ngay!
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="friend-add-input" class="join-input" style="text-align:left; font-size:13.5px; padding:9px 12px; margin-bottom:0; flex:1;" placeholder="Nhập tên tiểu thương muốn kết bạn..." maxlength="18">
+        <button class="btn-action btn-primary" style="padding:9px 16px;" onclick="addFriendByInput()">➕ Kết Bạn</button>
+      </div>
+      <div id="friends-list-container" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Hoạt Động Thị Trấn Sống, Cây Ước Nguyện & Sổ Tay Sưu Tầm (Phase 8-12) -->
+<div id="modal-town-activities" class="modal-overlay">
+  <div class="modal-box" style="max-width:660px;">
+    <div class="modal-header">
+      <h3>🎪 HOẠT ĐỘNG THỊ TRẤN SỐNG & CÂY ƯỚC NGUYỆN</h3>
+      <button class="modal-close" onclick="closeModal('modal-town-activities')">✕</button>
+    </div>
+    <div class="modal-body" id="town-activities-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Đi Nhanh Tới 9 Khu Vực & Xe Điện Xanh (Phase 9) -->
+<div id="modal-goto" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header">
+      <h3>🧭 BẢN ĐỒ ĐI NHANH & TUYẾN XE ĐIỆN XANH</h3>
+      <button class="modal-close" onclick="closeModal('modal-goto')">✕</button>
+    </div>
+    <div class="modal-body" id="goto-zones-list"></div>
+  </div>
+</div>
+
+<!-- Modal: Cài Đặt Đồ Họa, Trợ Năng & Mã Khôi Phục (Phase 4 & 5) -->
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-header">
+      <h3 data-i18n="settings_title">⚙️ CÀI ĐẶT, ĐỒ HỌA & TRỢ NĂNG</h3>
+      <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+    </div>
+    <div class="modal-body" id="settings-modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Luật Chơi Vui Vẻ (Phase 1 & 2) -->
+<div id="modal-rules" class="modal-overlay">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header">
+      <h3>📜 LUẬT CHƠI VUI VẺ — SÂN CHƠI MỞ</h3>
+      <button class="modal-close" onclick="closeModal('modal-rules')">✕</button>
+    </div>
+    <div class="modal-body" style="font-size:13.5px; line-height:1.65; color:#f8fafc;">
+      <p>1. 🤝 <b>Thân thiện & Lịch sự</b>: Tôn trọng mọi người chơi, chào hỏi vui vẻ và chia sẻ niềm vui phố chợ.</p>
+      <p>2. 🚫 <b>Không ngôn từ xấu</b>: Hệ thống tự động lọc từ ngữ không phù hợp và giới hạn spam tin nhắn.</p>
+      <p>3. 🛡️ <b>Tự bảo vệ một chạm</b>: Nếu ai làm phiền, chạm vào người đó và bấm <b>Chặn</b> hoặc <b>Báo cáo</b> ngay lập tức.</p>
+      <p>4. 🔑 <b>Bảo vệ tài khoản tự động</b>: Tài khoản của bạn được gắn khóa bảo mật tự động trên trình duyệt kèm Mã Khôi Phục 6 ký tự trong mục ⚙️ Cài Đặt.</p>
+      <p>5. 🎉 <b>Cùng nhau chung tay</b>: Tham gia Giờ Vàng, Đá Cầu, Kéo Co, Chăm Vườn Cộng Đồng và thả Đèn Hoa Đăng để xây dựng thị trấn ấm áp!</p>
+      <button class="join-btn" onclick="closeModal('modal-rules')">Đã Hiểu — Cùng Vào Chợ Vui Chơi! 🏮</button>
+    </div>
+  </div>
+</div>
+
+<!-- Khung Chụp Ảnh Kỷ Niệm (Photo Mode Overlay - Phase 12) -->
+<div id="photo-mode-overlay">
+  <div class="photo-frame-border">
+    <div class="photo-watermark">🏮 CHỢ THỊ TRẤN VIỆT NAM 3D</div>
+  </div>
+  <div class="photo-controls">
+    <button class="btn-action btn-gold" style="padding:10px 20px; font-size:14px;" onclick="capturePostcardPng()" data-i18n="photo_save">📸 Lưu Ảnh Bưu Thiếp PNG</button>
+    <button class="btn-action btn-red" style="padding:10px 18px; font-size:14px;" onclick="exitPhotoMode()" data-i18n="photo_exit">✕ Thoát Chế Độ Chụp</button>
+  </div>
+</div>
+
+<!-- Modular Client Architecture -->
+<script src="/js/state-audio.js"></script>
+<script src="/js/world-3d.js"></script>
+<script src="/js/entities-3d.js"></script>
+<script src="/js/controls-loop.js"></script>
+<script src="/js/network-ui.js"></script>
+<script src="/js/town-expansion.js"></script>
+</body>
+</html>
