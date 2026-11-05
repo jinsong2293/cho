@@ -219,10 +219,10 @@ const CUSTOMER_DEFS = [
     role: "tea_host",
     homeZone: "tea_table_corner",
     waypoints: [
-      { x: -8.0, z: 27.0, wait: 7000, dialog: "Trà đá vỉa hè bến sông mát rượi, mời bà con dừng chân nghỉ ngơi!" },
-      { x: -6.0, z: 27.0, wait: 6000, dialog: "Hạt hướng dương giòn rụm, trà chanh thanh mát ngắm cảnh sông nước!" },
-      { x: -10.0, z: 27.0, wait: 7000, dialog: "Nước mía siêu sạch vừa ép xong, ngọt lịm thơm mùi tắc!" },
-      { x: -8.0, z: 29.0, wait: 7000, dialog: "Tiếng đàn guitar acoustic êm đềm bên bến đò quê hương!" }
+      { x: -16.0, z: 27.0, wait: 7000, dialog: "Trà đá vỉa hè bến sông mát rượi, mời bà con dừng chân nghỉ ngơi!" },
+      { x: -14.0, z: 28.0, wait: 6000, dialog: "Hạt hướng dương giòn rụm, trà chanh thanh mát ngắm cảnh sông nước!" },
+      { x: -18.0, z: 28.0, wait: 7000, dialog: "Nước mía siêu sạch vừa ép xong, ngọt lịm thơm mùi tắc!" },
+      { x: -16.0, z: 30.0, wait: 7000, dialog: "Tiếng đàn guitar acoustic êm đềm bên bến đò quê hương!" }
     ]
   },
   {

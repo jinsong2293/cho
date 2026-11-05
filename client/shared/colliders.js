@@ -80,46 +80,45 @@
     },
 
     // ----------------------------------------------------
-    // 4. PHỐ VĂN HÓA TRÀ ĐÁ & ACOUSTIC BỜ SÔNG (-8, 27)
+    // 4. PHỐ VĂN HÓA TRÀ ĐÁ & ACOUSTIC BỜ SÔNG (-16, 28)
     // ----------------------------------------------------
     {
       type: "box",
       id: "tea_table",
       name: "Bàn Trà Đá Vỉa Hè Bờ Sông",
-      minX: -9.2,
-      maxX: -6.8,
-      minZ: 26.3,
-      maxZ: 27.7,
+      minX: -17.2,
+      maxX: -14.8,
+      minZ: 27.3,
+      maxZ: 28.7,
     },
     {
       type: "box",
       id: "tea_cart_vintage",
       name: "Xe Trà Chanh & Cà Phê Vợt Phố Cổ",
-      minX: -13.0,
-      maxX: -11.0,
-      minZ: 26.0,
-      maxZ: 28.0,
+      minX: -20.2,
+      maxX: -18.2,
+      minZ: 27.0,
+      maxZ: 29.0,
     },
     {
       type: "box",
       id: "tea_acoustic_stage",
       name: "Bục Nhạc Acoustic Vỉa Hè",
-      minX: -4.8,
-      maxX: -2.6,
-      minZ: 26.0,
-      maxZ: 28.0,
+      minX: -13.8,
+      maxX: -11.6,
+      minZ: 27.0,
+      maxZ: 29.0,
     },
 
     // ----------------------------------------------------
-    // 4B. ĐẠI ĐẤU TRƯỜNG ĐÁ CẦU KIỂNG LIÊN PHƯỜNG (8, -15)
-    // Khán đài cổ vũ & Tháp trọng tài (chừa trống toàn bộ mặt sân đá cầu rộng lớn)
+    // 4B. ĐẠI ĐẤU TRƯỜNG ĐÁ CẦU KIỂNG PHÍA ĐÔNG (48, -16)
     // ----------------------------------------------------
     {
       type: "box",
       id: "shuttlecock_bleacher_n",
       name: "Khán Đài Cổ Vũ Đá Cầu",
-      minX: 4.0,
-      maxX: 12.0,
+      minX: 42.0,
+      maxX: 54.0,
       minZ: -22.2,
       maxZ: -20.2,
     },
@@ -127,63 +126,18 @@
       type: "circle",
       id: "shuttlecock_referee_tower",
       name: "Tháp Trọng Tài & Bảng Điểm Đá Cầu",
-      x: 14.2,
-      z: -19.2,
+      x: 54.2,
+      z: -18.2,
       radius: 0.85,
     },
 
     // ----------------------------------------------------
-    // 5. NHÀ VĂN HÓA THỊ TRẤN (-26, 0)
+    // 5. ĐẠI LỘ VĂN HÓA & PHỐ CỔ PHÍA TÂY (x = -38)
     // ----------------------------------------------------
-    {
-      type: "box",
-      id: "culture_hall_main",
-      name: "Nhà Văn Hóa Thị Trấn",
-      minX: -33.5,
-      maxX: -18.5,
-      minZ: -5.0,
-      maxZ: 5.0,
-    },
-
-    // ----------------------------------------------------
-    // 6. PHỐ DÂN CƯ & THƯƠNG MẠI ĐÔNG (x = 26, z = 0)
-    // ----------------------------------------------------
-    {
-      type: "box",
-      id: "residence_shop_1",
-      name: "Ngân Hàng Phố Chợ & Két Tiết Kiệm",
-      minX: 25.8,
-      maxX: 32.8,
-      minZ: -12.3,
-      maxZ: -5.7,
-    },
-    {
-      type: "box",
-      id: "residence_shop_2",
-      name: "Đại Lý Vé Số & Thẻ Cào May Mắn",
-      minX: 25.8,
-      maxX: 32.8,
-      minZ: -3.3,
-      maxZ: 3.3,
-    },
-    {
-      type: "box",
-      id: "residence_garage",
-      name: "Tiệm Độ Xe Máy & Nước Sâm Bí Đao",
-      minX: 25.5,
-      maxX: 33.0,
-      minZ: 5.6,
-      maxZ: 13.5,
-    },
-
-    // ----------------------------------------------------
-    // 7. DÃY NHÀ PHỐ 2 BÊN (Shophouses x = -38 và x = +38)
-    // ----------------------------------------------------
-    // Dãy phố Tây (x ≈ -38)
     {
       type: "box",
       id: "shophouse_w1",
-      name: "Tiệm Vàng Kim Phát",
+      name: "Nhà May Áo Dài Cô Ba",
       minX: -41.8,
       maxX: -34.2,
       minZ: -22.3,
@@ -192,26 +146,38 @@
     {
       type: "box",
       id: "shophouse_w2",
-      name: "Nhà May Áo Dài Cô Ba",
+      name: "Tiệm Thuốc Bắc Vạn An",
       minX: -41.8,
       maxX: -34.2,
-      minZ: -4.8,
-      maxZ: 4.8,
+      minZ: -10.0,
+      maxZ: -2.0,
+    },
+    {
+      type: "box",
+      id: "culture_hall_main",
+      name: "Nhà Văn Hóa Thị Trấn & Bảng Tin",
+      minX: -41.8,
+      maxX: -34.2,
+      minZ: 2.0,
+      maxZ: 10.0,
     },
     {
       type: "box",
       id: "shophouse_w3",
-      name: "Tiệm Thuốc Bắc Vạn An",
+      name: "Khách Sạn & Trà Quán Đông Dương",
       minX: -41.8,
       maxX: -34.2,
       minZ: 13.7,
       maxZ: 22.3,
     },
-    // Dãy phố Đông (x ≈ +38)
+
+    // ----------------------------------------------------
+    // 6. ĐẠI LỘ THƯƠNG MẠI & TÀI CHÍNH PHÍA ĐÔNG (x = +38)
+    // ----------------------------------------------------
     {
       type: "box",
-      id: "shophouse_e1",
-      name: "Cà Phê Vợt Phố Cổ",
+      id: "residence_shop_1",
+      name: "Ngân Hàng Phố Chợ & Két Tiết Kiệm",
       minX: 34.2,
       maxX: 41.8,
       minZ: -22.3,
@@ -219,17 +185,26 @@
     },
     {
       type: "box",
-      id: "shophouse_e2",
-      name: "Khách Sạn Đông Dương",
+      id: "shophouse_e1",
+      name: "Tiệm Vàng Kim Phát",
       minX: 34.2,
       maxX: 41.8,
-      minZ: -4.8,
-      maxZ: 4.8,
+      minZ: -10.0,
+      maxZ: -2.0,
     },
     {
       type: "box",
-      id: "shophouse_e3",
-      name: "Gánh Chè Ba Miền",
+      id: "residence_shop_2",
+      name: "Đại Lý Vé Số & Thẻ Cào May Mắn",
+      minX: 34.2,
+      maxX: 41.8,
+      minZ: 2.0,
+      maxZ: 10.0,
+    },
+    {
+      type: "box",
+      id: "residence_garage",
+      name: "Tiệm Độ Xe Máy & Nước Sâm Bí Đao",
       minX: 34.2,
       maxX: 41.8,
       minZ: 13.7,

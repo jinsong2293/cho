@@ -905,16 +905,20 @@ function interactNearest() {
     return;
   }
 
-  // 1. Phố Dịch Vụ & Thương Mại Đông (x = 26)
-  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - (-9)) < 6.5) {
+  // 1. Phố Dịch Vụ, Tài Chính & Độ Xe Phía Đông (x = 38)
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - (-18)) < 7.0) {
     openBankModal();
     return;
   }
-  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - 0) < 6.5) {
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - (-6)) < 7.0) {
+    openBankModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - 6) < 7.0) {
     openLotteryModal();
     return;
   }
-  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - 9.5) < 6.5) {
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - 18) < 7.0) {
     openGarageModal();
     return;
   }
@@ -925,39 +929,25 @@ function interactNearest() {
     return;
   }
 
-  // 3. Phố Cổ Văn Hóa & Nhà May Áo Dài Tây (x ≈ -26 / -38)
-  if (Math.hypot(myPlayer.pos.x - (-26), myPlayer.pos.z - 0) < 9.5) {
-    openCommunityEventsModal();
-    return;
-  }
-  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - 0) < 7.5) {
+  // 3. Phố Cổ Văn Hóa & Làng Nghề Phía Tây (x = -38)
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - (-18)) < 7.0) {
     openCustomizationModal();
     return;
   }
-  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - (-18)) < 7.5) {
-    openBankModal();
-    return;
-  }
-  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - 18) < 7.5) {
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - (-6)) < 7.0) {
     openGarageModal();
     return;
   }
-
-  // 4. Dãy Nhà Phố Đông (x ≈ 38)
-  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - (-18)) < 7.5) {
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - 6) < 7.0) {
+    openCommunityEventsModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - 18) < 7.0) {
     openTeaTableModal();
     return;
   }
-  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - 0) < 7.5) {
-    openHouseModal();
-    return;
-  }
-  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - 18) < 7.5) {
-    openWholesaleModal();
-    return;
-  }
 
-  // 5. Giải trí & Minigame
+  // 4. Giải Trí, Thể Thao & Bờ Sông
   if (Math.hypot(myPlayer.pos.x - (-48), myPlayer.pos.z - (-16)) < 11.5) {
     openBauCuaModal();
     return;
@@ -966,11 +956,11 @@ function interactNearest() {
     kickShuttlecockNow();
     return;
   }
-  if (Math.hypot(myPlayer.pos.x - (-8), myPlayer.pos.z - 27) < 11.5) {
+  if (Math.hypot(myPlayer.pos.x - (-16), myPlayer.pos.z - 28) < 11.5) {
     openTeaTableModal();
     return;
   }
-  if (Math.hypot(myPlayer.pos.x - 0, myPlayer.pos.z - 32) < 11.0) {
+  if (Math.hypot(myPlayer.pos.x - 0, myPlayer.pos.z - 34) < 11.0) {
     openFishingModal();
     return;
   }

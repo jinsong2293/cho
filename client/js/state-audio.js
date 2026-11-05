@@ -417,22 +417,49 @@ function updateContextAction() {
     return;
   }
 
-  if (Math.hypot(px - 26, pz - (-9)) <= 7.0) {
+  // 1. Phố Dịch Vụ, Tài Chính & Độ Xe Phía Đông (x = 38)
+  if (Math.hypot(px - 38, pz - (-18)) <= 7.0) {
     applyContextUI('bank', '🏦', 'Ngân Hàng Phố Chợ (E)');
     return;
   }
-  if (Math.hypot(px - 26, pz - 0) <= 7.0) {
+  if (Math.hypot(px - 38, pz - (-6)) <= 7.0) {
+    applyContextUI('bank', '🪙', 'Tiệm Vàng Kim Phát (E)');
+    return;
+  }
+  if (Math.hypot(px - 38, pz - 6) <= 7.0) {
     applyContextUI('lottery', '🎫', 'Đại Lý Vé Số & Cào (E)');
     return;
   }
-  if (Math.hypot(px - 26, pz - 9.5) <= 7.0) {
+  if (Math.hypot(px - 38, pz - 18) <= 7.0) {
     applyContextUI('garage', '🛵', 'Tiệm Độ Xe & Nước Sâm (E)');
     return;
   }
+
+  // 2. Khu Bất Động Sản Nhà Ở Của Bạn (48, 22)
   if (Math.hypot(px - 48, pz - 22) <= 10.0) {
     applyContextUI('house', '🏠', 'Căn Nhà Riêng Của Bạn (E)');
     return;
   }
+
+  // 3. Phố Cổ Văn Hóa & Làng Nghề Phía Tây (x = -38)
+  if (Math.hypot(px - (-38), pz - (-18)) <= 7.0) {
+    applyContextUI('tailor', '👘', 'Nhà May Áo Dài Cô Ba (E)');
+    return;
+  }
+  if (Math.hypot(px - (-38), pz - (-6)) <= 7.0) {
+    applyContextUI('garage', '🌿', 'Tiệm Thuốc Bắc Vạn An (E)');
+    return;
+  }
+  if (Math.hypot(px - (-38), pz - 6) <= 7.0) {
+    applyContextUI('hall', '🏛️', 'Bảng Tin & Hội Làng (E)');
+    return;
+  }
+  if (Math.hypot(px - (-38), pz - 18) <= 7.0) {
+    applyContextUI('tea', '☕', 'Khách Sạn & Cà Phê Vợt (E)');
+    return;
+  }
+
+  // 4. Giải Trí, Thể Thao & Bến Sông
   if (Math.hypot(px - (-48), pz - (-16)) <= 11.0) {
     applyContextUI('baucua', '🎲', 'Đại Lầu Hội Bầu Cua (E)');
     return;
@@ -441,40 +468,12 @@ function updateContextAction() {
     applyContextUI('shuttlecock', '🪶', 'Đấu Trường Đá Cầu (E)');
     return;
   }
-  if (Math.hypot(px - (-8), pz - 27) <= 11.0) {
-    applyContextUI('tea', '☕', 'Quán Trà Đá Vỉa Hè (E)');
+  if (Math.hypot(px - (-16), pz - 28) <= 11.0) {
+    applyContextUI('tea', '☕', 'Quán Trà Đá Bờ Sông (E)');
     return;
   }
-  if (Math.hypot(px - 0, pz - 32) <= 10.5) {
+  if (Math.hypot(px - 0, pz - 34) <= 10.5) {
     applyContextUI('fish', '🎣', 'Câu Cá Bến Sông (E)');
-    return;
-  }
-  if (Math.hypot(px - (-26), pz - 0) <= 8.5) {
-    applyContextUI('hall', '🏛️', 'Bảng Tin & Sự Kiện (E)');
-    return;
-  }
-  if (Math.hypot(px - (-38), pz - 0) <= 7.5) {
-    applyContextUI('tailor', '👘', 'Nhà May Áo Dài Cô Ba (E)');
-    return;
-  }
-  if (Math.hypot(px - (-38), pz - (-18)) <= 7.5) {
-    applyContextUI('bank', '🪙', 'Tiệm Vàng Kim Phát (E)');
-    return;
-  }
-  if (Math.hypot(px - (-38), pz - 18) <= 7.5) {
-    applyContextUI('garage', '🌿', 'Tiệm Thuốc Bắc Vạn An (E)');
-    return;
-  }
-  if (Math.hypot(px - 38, pz - (-18)) <= 7.5) {
-    applyContextUI('tea', '☕', 'Cà Phê Vợt Phố Cổ (E)');
-    return;
-  }
-  if (Math.hypot(px - 38, pz - 0) <= 7.5) {
-    applyContextUI('house', '🏨', 'Khách Sạn Đông Dương (E)');
-    return;
-  }
-  if (Math.hypot(px - 38, pz - 18) <= 7.5) {
-    applyContextUI('wholesale', '🍧', 'Gánh Chè Ba Miền (E)');
     return;
   }
 
