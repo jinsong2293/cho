@@ -802,12 +802,13 @@ function buildVietnameseMarketTown() {
   buildGoldenLotusFountain();
   buildCentralTownBoulevard();
   buildTownDirectionalSignpost(0, -6);
-  buildBauCuaBooth(-8, -16);
-  buildSidewalkTeaTable(0, 13.5);
+  buildBauCuaBooth(-48, -16);
+  buildSidewalkTeaTable(-8, 27);
   buildRiversidePier(0, 32);
   buildCommunityCultureHall(-26, 0);
   buildResidentialStreet(26, 0);
-  buildShuttlecockCourt(8, -15);
+  buildShuttlecockCourt(48, -16);
+  buildPlayerHouse3D(48, 22);
   buildVietnameseUtilityPoles();
 
   buildTraditionalVillageGate(0, -52);
@@ -926,25 +927,30 @@ function buildTownDirectionalSignpost(x, z) {
   postGroup.add(finial);
 
   // Biển chỉ hướng 4 phương
-  const signW = createTextSprite("⬅️ KHU BẦU CUA & HỒ SEN", "#fef08a", "rgba(185, 28, 28, 0.95)");
-  signW.position.set(-1.4, 3.8, 0);
-  signW.scale.set(3.2, 0.62, 1);
+  const signW = createTextSprite("⬅️ SỚI BẦU CUA & HỒ SEN (48m)", "#fef08a", "rgba(185, 28, 28, 0.95)");
+  signW.position.set(-1.8, 3.8, 0);
+  signW.scale.set(4.2, 0.65, 1);
   postGroup.add(signW);
 
-  const signE = createTextSprite("KHU ĐÁ CẦU & LÀNG NGHỀ ➡️", "#6ee7b7", "rgba(6, 78, 59, 0.95)");
-  signE.position.set(1.4, 3.2, 0);
-  signE.scale.set(3.2, 0.62, 1);
+  const signE = createTextSprite("ĐÁ CẦU & LÀNG NGHỀ (48m) ➡️", "#6ee7b7", "rgba(6, 78, 59, 0.95)");
+  signE.position.set(1.8, 3.2, 0);
+  signE.scale.set(4.2, 0.65, 1);
   postGroup.add(signE);
 
-  const signN = createTextSprite("⬆️ CHỢ BẾN THÀNH & PHỐ ĐÊM", "#fde047", "rgba(15, 23, 42, 0.95)");
+  const signN = createTextSprite("⬆️ CHỢ BẾN THÀNH & PHỐ ĐÊM (28m)", "#fde047", "rgba(15, 23, 42, 0.95)");
   signN.position.set(0, 2.6, -1.2);
-  signN.scale.set(3.4, 0.62, 1);
+  signN.scale.set(3.8, 0.65, 1);
   postGroup.add(signN);
 
-  const signS = createTextSprite("⬇️ PHỐ TRÀ ĐÁ & BẾN SÔNG", "#bae6fd", "rgba(3, 105, 161, 0.95)");
+  const signS = createTextSprite("⬇️ TRÀ ĐÁ BỜ SÔNG & CẦU TÀU (33m)", "#bae6fd", "rgba(3, 105, 161, 0.95)");
   signS.position.set(0, 2.0, 1.2);
-  signS.scale.set(3.2, 0.62, 1);
+  signS.scale.set(3.8, 0.65, 1);
   postGroup.add(signS);
+
+  const signSE = createTextSprite("KHU NHÀ Ở & XÂY NHÀ (55m) ↗️", "#fbcfe8", "rgba(131, 24, 67, 0.95)");
+  signSE.position.set(1.4, 1.4, 0.8);
+  signSE.scale.set(3.6, 0.62, 1);
+  postGroup.add(signSE);
 
   scene.add(postGroup);
 }
@@ -2034,3 +2040,287 @@ function buildResidentialStreet(x, z) {
 
   scene.add(playerHouseGroup);
 }
+
+/* ==========================================================================
+   KHU ĐÔ THỊ MỚI & BẤT ĐỘNG SẢN NHÀ Ở CỦA NGƯỜI CHƠI (48, 22)
+   ========================================================================== */
+let playerEstateGroup = null;
+
+function buildPlayerHouse3D(x, z) {
+  playerEstateGroup = new THREE.Group();
+  playerEstateGroup.position.set(x, 0, z);
+
+  // Thảm cỏ sân vườn riêng biệt 16m x 16m
+  const yardMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.85 });
+  const yard = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), yardMat);
+  yard.rotation.x = -Math.PI / 2;
+  yard.position.y = 0.02;
+  yard.receiveShadow = true;
+  playerEstateGroup.add(yard);
+
+  // Lối đi lát đá tự nhiên dẫn từ cổng vào thềm nhà
+  const stonePath = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 7.8),
+    new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 })
+  );
+  stonePath.rotation.x = -Math.PI / 2;
+  stonePath.position.set(0, 0.025, -4.0);
+  playerEstateGroup.add(stonePath);
+
+  // Hàng rào cọc gỗ bao quanh khuôn viên
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+  const postGeom = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8);
+  [[-7.8, -7.8], [7.8, -7.8], [-7.8, 7.8], [7.8, 7.8], [-7.8, 0], [7.8, 0], [-3.0, -7.8], [3.0, -7.8]].forEach(([px, pz]) => {
+    const post = new THREE.Mesh(postGeom, fenceMat);
+    post.position.set(px, 0.6, pz);
+    playerEstateGroup.add(post);
+  });
+
+  // Cổng vòm chào vào khuôn viên nhà ở
+  const gateSign = createTextSprite(
+    "🏡 KHU ĐẤT NHÀ Ở CỦA BẠN (SỔ ĐỎ CHÍNH CHỦ)",
+    "#fef08a",
+    "rgba(15, 23, 42, 0.95)"
+  );
+  gateSign.position.set(0, 3.4, -7.8);
+  gateSign.scale.set(4.6, 0.72, 1);
+  gateSign.name = "estateGateSign";
+  playerEstateGroup.add(gateSign);
+
+  scene.add(playerEstateGroup);
+
+  const initialLvl = (window.myPlayer && window.myPlayer.houseConfig && window.myPlayer.houseConfig.level) || 0;
+  updatePlayerHouse3D(initialLvl, window.myPlayer && window.myPlayer.houseConfig);
+}
+
+function updatePlayerHouse3D(level, config = {}) {
+  if (!playerEstateGroup) return;
+
+  const toRemove = [];
+  playerEstateGroup.children.forEach((child) => {
+    if (child.name && child.name.startsWith("houseStruct_")) {
+      toRemove.push(child);
+    }
+  });
+  toRemove.forEach((c) => playerEstateGroup.remove(c));
+
+  const houseSub = new THREE.Group();
+  const currentLvl = Number(level) || 0;
+  houseSub.name = "houseStruct_level" + currentLvl;
+
+  const ownerNick = (window.myPlayer && window.myPlayer.nickname) || "Tiểu Thương";
+
+  // Cập nhật biển hiệu cổng vào
+  const gateSign = playerEstateGroup.getObjectByName("estateGateSign");
+  if (gateSign) {
+    playerEstateGroup.remove(gateSign);
+    const title = currentLvl === 0
+      ? `📐 LÔ ĐẤT NỀN CỦA [${ownerNick}] · [CHẠM ĐỂ MUA & XÂY NHÀ]`
+      : `🏡 TỔ ẤM CỦA [${ownerNick}] · CẤP ${currentLvl}`;
+    const newSign = createTextSprite(
+      title,
+      "#fef08a",
+      currentLvl === 0 ? "rgba(30, 41, 59, 0.95)" : "rgba(185, 28, 28, 0.95)"
+    );
+    newSign.position.set(0, 3.4, -7.8);
+    newSign.scale.set(4.8, 0.72, 1);
+    newSign.name = "estateGateSign";
+    playerEstateGroup.add(newSign);
+  }
+
+  if (currentLvl === 0) {
+    // Cọc mốc ranh giới đất cắm cờ đỏ
+    const marker = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.16, 1.4, 8),
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.5 })
+    );
+    marker.position.set(0, 0.7, 1.0);
+    houseSub.add(marker);
+
+    const banner = createTextSprite("🚩 ĐẤT NỀN ĐANG CHỜ KHAI MÓNG", "#fef08a", "rgba(185, 28, 28, 0.9)");
+    banner.position.set(0, 1.8, 1.0);
+    banner.scale.set(3.4, 0.6, 1);
+    houseSub.add(banner);
+  } else if (currentLvl === 1) {
+    // Cấp 1: Nhà Mái Lá Quê Hương
+    const bambooMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.9 });
+    const thatchMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.95 });
+
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(6.5, 3.2, 5.2), bambooMat);
+    walls.position.set(0, 1.6, 1.5);
+    houseSub.add(walls);
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(5.2, 2.2, 4), thatchMat);
+    roof.position.set(0, 4.2, 1.5);
+    roof.rotation.y = Math.PI / 4;
+    houseSub.add(roof);
+
+    // Chum sành & giàn mướp
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.8, 12), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }));
+    pot.position.set(-3.8, 0.4, -1.8);
+    houseSub.add(pot);
+  } else if (currentLvl === 2) {
+    // Cấp 2: Nhà Gỗ Ba Gian
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c2b0c, roughness: 0.75 });
+    const tileMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.55 });
+
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(9.0, 3.6, 5.8), woodMat);
+    walls.position.set(0, 1.8, 1.5);
+    houseSub.add(walls);
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(6.8, 2.6, 4), tileMat);
+    roof.position.set(0, 4.8, 1.5);
+    roof.rotation.y = Math.PI / 4;
+    houseSub.add(roof);
+
+    const porch = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.25, 2.4), woodMat);
+    porch.position.set(0, 0.12, -2.0);
+    houseSub.add(porch);
+  } else if (currentLvl === 3) {
+    // Cấp 3: Nhà Phố Cổ Hội An (Tường Vàng & Đèn Lồng)
+    const hoiAnWall = new THREE.MeshStandardMaterial({ color: (config && config.wall) || 0xfef08a, roughness: 0.65 });
+    const darkTile = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 });
+    const timberMat = new THREE.MeshStandardMaterial({ color: 0x3b1c0a, roughness: 0.7 });
+
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(10.5, 4.6, 6.5), hoiAnWall);
+    walls.position.set(0, 2.3, 1.5);
+    houseSub.add(walls);
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(7.8, 2.8, 4), darkTile);
+    roof.position.set(0, 5.8, 1.5);
+    roof.rotation.y = Math.PI / 4;
+    houseSub.add(roof);
+
+    const balcony = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.35, 2.2), timberMat);
+    balcony.position.set(0, 2.8, -2.2);
+    houseSub.add(balcony);
+
+    const bougainvillea = new THREE.Mesh(
+      new THREE.SphereGeometry(1.2, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0xd946ef, roughness: 0.65 })
+    );
+    bougainvillea.position.set(-3.6, 3.8, -2.0);
+    houseSub.add(bougainvillea);
+
+    [-3.2, -1.1, 1.1, 3.2].forEach((lx) => {
+      const lantern = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 10, 8),
+        new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xb91c1c, emissiveIntensity: 0.6 })
+      );
+      lantern.position.set(lx, 2.5, -2.0);
+      houseSub.add(lantern);
+    });
+  } else if (currentLvl === 4) {
+    // Cấp 4: Biệt Thự Nhà Vườn Nam Bộ
+    const villaWall = new THREE.MeshStandardMaterial({ color: (config && config.wall) || 0xfef9c3, roughness: 0.6 });
+    const redTile = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.45 });
+
+    const mainHouse = new THREE.Mesh(new THREE.BoxGeometry(12.0, 5.2, 7.5), villaWall);
+    mainHouse.position.set(0, 2.6, 1.8);
+    houseSub.add(mainHouse);
+
+    const grandRoof = new THREE.Mesh(new THREE.ConeGeometry(9.0, 3.2, 4), redTile);
+    grandRoof.position.set(0, 6.6, 1.8);
+    grandRoof.rotation.y = Math.PI / 4;
+    houseSub.add(grandRoof);
+
+    const court = new THREE.Mesh(
+      new THREE.PlaneGeometry(13.5, 6.0),
+      new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.7 })
+    );
+    court.rotation.x = -Math.PI / 2;
+    court.position.set(0, 0.03, -3.2);
+    houseSub.add(court);
+
+    const pond = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.8, 1.8, 0.4, 18),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, metalness: 0.3 })
+    );
+    pond.position.set(4.5, 0.2, -3.2);
+    houseSub.add(pond);
+
+    const rock = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.9, 1),
+      new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85 })
+    );
+    rock.position.set(4.5, 0.8, -3.2);
+    houseSub.add(rock);
+  } else if (currentLvl >= 5) {
+    // Cấp 5: Dinh Thự Hoàng Gia Cung Đình
+    const royalWall = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.5 });
+    const goldRoof = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.25 });
+    const goldPillars = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.7, roughness: 0.2 });
+
+    const palace = new THREE.Mesh(new THREE.BoxGeometry(13.2, 5.8, 8.2), royalWall);
+    palace.position.set(0, 2.9, 1.8);
+    houseSub.add(palace);
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(10.2, 3.8, 4), goldRoof);
+    roof.position.set(0, 7.5, 1.8);
+    roof.rotation.y = Math.PI / 4;
+    houseSub.add(roof);
+
+    [-5.0, -2.0, 2.0, 5.0].forEach((px) => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 5.2, 12), goldPillars);
+      col.position.set(px, 2.6, -2.4);
+      houseSub.add(col);
+    });
+
+    [-4.5, 4.5].forEach((lx) => {
+      const lion = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 1.4, 0.8),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5 })
+      );
+      lion.position.set(lx, 0.7, -6.8);
+      houseSub.add(lion);
+    });
+  }
+
+  // Đặt các vật phẩm đã sắm
+  const items = Array.isArray(config && config.items) ? config.items : [];
+  if (items.includes("sap_gu")) {
+    const sapGu = new THREE.Mesh(
+      new THREE.BoxGeometry(2.0, 0.6, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.5 })
+    );
+    sapGu.position.set(-2.5, 0.45, -1.8);
+    houseSub.add(sapGu);
+  }
+  if (items.includes("mai_vang_co")) {
+    const mai = new THREE.Mesh(
+      new THREE.ConeGeometry(0.9, 2.2, 8),
+      new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 })
+    );
+    mai.position.set(-5.5, 1.2, -4.5);
+    houseSub.add(mai);
+  }
+  if (items.includes("dao_phai_bac")) {
+    const dao = new THREE.Mesh(
+      new THREE.ConeGeometry(0.9, 2.2, 8),
+      new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.6 })
+    );
+    dao.position.set(5.5, 1.2, -4.5);
+    houseSub.add(dao);
+  }
+  if (items.includes("gieng_nuoc_co")) {
+    const well = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.9, 1.0, 0.9, 12),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 })
+    );
+    well.position.set(-5.2, 0.45, 4.5);
+    houseSub.add(well);
+  }
+  if (items.includes("be_ca_koi") && currentLvl < 4) {
+    const miniPond = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.4, 1.4, 0.35, 16),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, metalness: 0.3 })
+    );
+    miniPond.position.set(4.8, 0.18, -3.5);
+    houseSub.add(miniPond);
+  }
+
+  playerEstateGroup.add(houseSub);
+}
+
+window.buildPlayerHouse3D = buildPlayerHouse3D;
+window.updatePlayerHouse3D = updatePlayerHouse3D;

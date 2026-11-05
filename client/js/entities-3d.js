@@ -457,6 +457,8 @@ let shuttlecockAnim = {
 };
 
 function buildShuttlecockCourt(x, z) {
+  shuttlecockAnim.startPos.set(x, 0.35, z);
+  shuttlecockAnim.endPos.set(x, 0.35, z);
   const group = new THREE.Group();
   group.position.set(x, 0, z);
 

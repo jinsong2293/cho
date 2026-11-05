@@ -63,9 +63,9 @@ assert.ok(
 );
 console.log(`     ✓ Nhân vật dừng bên ngoài thành đài sen tại z = ${lotusPos.z}`);
 
-// 4. Kiểm tra va chạm Sới Bầu Cua (-8, -16)
-console.log("  🔍 4. Kiểm tra va chạm Sới Bầu Cua (-8, -16):");
-const hitBauCua = Colliders.isColliding(-8, -16, 0.45);
+// 4. Kiểm tra va chạm Sới Bầu Cua Phía Tây (-48, -16)
+console.log("  🔍 4. Kiểm tra va chạm Sới Bầu Cua (-48, -16):");
+const hitBauCua = Colliders.isColliding(-48, -16, 0.45);
 assert.ok(hitBauCua, "Bàn sới Bầu Cua phải là vật cản cứng!");
 assert.strictEqual(hitBauCua.id, "bau_cua_deck");
 console.log("     ✓ Sới Bầu Cua cản chính xác người chơi giẫm lên bàn xúc xắc.");

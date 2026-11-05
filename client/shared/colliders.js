@@ -51,14 +51,14 @@
     },
 
     // ----------------------------------------------------
-    // 3. ĐẠI LẦU HỘI BẦU CUA TÔM CÁ (-8, -16)
-    // Bàn lắc xúc xắc trung tâm & các trống hội
+    // 3. ĐẠI LẦU HỘI BẦU CUA TÔM CÁ PHÍA TÂY (-48, -16)
+    // Bàn lắc xúc xắc trung tâm & các trống hội ven hồ sen
     // ----------------------------------------------------
     {
       type: "circle",
       id: "bau_cua_deck",
       name: "Sới Bầu Cua Tôm Cá",
-      x: -8,
+      x: -48,
       z: -16,
       radius: 2.3,
     },
@@ -66,7 +66,7 @@
       type: "circle",
       id: "bau_cua_drum_l",
       name: "Trống Hội Bầu Cua Trái",
-      x: -11.8,
+      x: -51.8,
       z: -12.6,
       radius: 0.65,
     },
@@ -74,40 +74,40 @@
       type: "circle",
       id: "bau_cua_drum_r",
       name: "Trống Hội Bầu Cua Phải",
-      x: -4.2,
+      x: -44.2,
       z: -12.6,
       radius: 0.65,
     },
 
     // ----------------------------------------------------
-    // 4. ĐẠI QUẢNG TRƯỜNG TRÀ ĐÁ & ACOUSTIC VỈA HÈ (0, 13.5)
+    // 4. PHỐ VĂN HÓA TRÀ ĐÁ & ACOUSTIC BỜ SÔNG (-8, 27)
     // ----------------------------------------------------
     {
       type: "box",
       id: "tea_table",
-      name: "Bàn Trà Đá Vỉa Hè Trung Tâm",
-      minX: -1.2,
-      maxX: 1.2,
-      minZ: 12.8,
-      maxZ: 14.2,
+      name: "Bàn Trà Đá Vỉa Hè Bờ Sông",
+      minX: -9.2,
+      maxX: -6.8,
+      minZ: 26.3,
+      maxZ: 27.7,
     },
     {
       type: "box",
       id: "tea_cart_vintage",
       name: "Xe Trà Chanh & Cà Phê Vợt Phố Cổ",
-      minX: -7.2,
-      maxX: -5.2,
-      minZ: 12.4,
-      maxZ: 14.6,
+      minX: -13.0,
+      maxX: -11.0,
+      minZ: 26.0,
+      maxZ: 28.0,
     },
     {
       type: "box",
       id: "tea_acoustic_stage",
       name: "Bục Nhạc Acoustic Vỉa Hè",
-      minX: 5.2,
-      maxX: 7.4,
-      minZ: 12.2,
-      maxZ: 14.8,
+      minX: -4.8,
+      maxX: -2.6,
+      minZ: 26.0,
+      maxZ: 28.0,
     },
 
     // ----------------------------------------------------

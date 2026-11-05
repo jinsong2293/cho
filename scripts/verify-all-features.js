@@ -18,6 +18,8 @@ async function verifyAllFeatures() {
   const PORT = await getFreePort();
   console.log(`📡 Khởi động server test tại cổng ${PORT}...`);
   const srv = cp.spawn('node', ['server/index.js'], { env: { ...process.env, PORT: String(PORT) } });
+  srv.stdout.on('data', d => console.log('[SERVER]', d.toString().trim()));
+  srv.stderr.on('data', d => console.error('[SERVER ERR]', d.toString().trim()));
   await new Promise(r => setTimeout(r, 2200));
 
   const browser = await chromium.launch({ headless: true });
@@ -25,7 +27,13 @@ async function verifyAllFeatures() {
   const page = await context.newPage();
 
   const errors = [];
-  page.on('pageerror', err => errors.push(err.toString()));
+  page.on('pageerror', err => {
+    console.error('PAGE ERROR:', err);
+    errors.push(err.toString());
+  });
+  page.on('console', msg => {
+    console.log('PAGE LOG:', msg.text());
+  });
 
   try {
     // 1. Tải trang
@@ -37,11 +45,12 @@ async function verifyAllFeatures() {
     if (!isJoinScreenActive) throw new Error('Màn hình chào (join-screen) không hiển thị ban đầu');
     console.log('   ✓ Màn hình chào Onboarding hiển thị chuẩn xác.');
 
-    // 2. Kiểm tra Nút Vào Chợ
+    // 2. Kiểm tra Nút Vào ChỢ
     console.log('\n2️⃣ Kiểm tra Nút [▶ VÀO CHỢ]...');
     const nickInput = await page.$('#nickname-input');
-    if (nickInput) await nickInput.fill('KiemThuVien');
-    
+    const randomNick = 'KTV_' + Math.floor(1000 + Math.random() * 9000);
+    if (nickInput) await nickInput.fill(randomNick);
+
     await page.click('#join-screen .join-btn.join-cta');
     await page.waitForTimeout(2000);
 

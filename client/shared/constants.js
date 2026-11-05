@@ -99,22 +99,78 @@ const INITIAL_MONEY = 15000;        // Tiền khởi điểm: 15.000đ
 const MIN_NICKNAME_LENGTH = 2;
 const MAX_NICKNAME_LENGTH = 16;
 
+// Cấu hình Hệ Thống Bất Động Sản, Xây Nhà & Cửa Hàng Nội Thất
+const HOUSING_CONFIG = {
+  plotCost: 10000, // Chi phí mua lô đất nền có sổ đỏ: 10.000đ
+  levels: [
+    { level: 0, name: "Chưa Mua Đất", title: "Cư Dân Tự Do", cost: 0, desc: "Chưa sở hữu bất động sản tại thị trấn." },
+    { level: 1, name: "Nhà Mái Lá Quê Hương", title: "Chủ Đất Sơ Cấp", cost: 15000, desc: "Khuôn viên đất riêng, nhà tre mái lá tranh mộc mạc, giàn mướp và chum nước." },
+    { level: 2, name: "Nhà Gỗ Ba Gian", title: "Hộ Dân An Cư", cost: 35000, desc: "Cột gỗ lim chắc chắn, mái ngói âm dương đỏ au, hàng rào dâm bụt." },
+    { level: 3, name: "Nhà Phố Cổ Hội An", title: "Gia Đình Khá Giả", cost: 80000, desc: "Tường vàng nghệ tây rực rỡ, lồng đèn ngũ sắc, giàn hoa giấy tím trước ban công." },
+    { level: 4, name: "Biệt Thự Nhà Vườn", title: "Thương Gia Thành Đạt", cost: 180000, desc: "Sân gạch bát tràng thênh thang, hòn non bộ phong thủy, hồ cá koi và cổng tam quan." },
+    { level: 5, name: "Dinh Thự Hoàng Gia", title: "Đại Phú Hộ Thị Trấn", cost: 380000, desc: "Mái đao thếp vàng lưỡng long chầu nguyệt, đèn lụa cung đình lộng lẫy tột đỉnh." },
+  ],
+  items: [
+    // Nội thất phòng khách
+    { id: "sap_gu", name: "Sập Gụ Tủ Chè Cổ", category: "Nội thất", price: 12000, icon: "🛋️", comfort: 15, desc: "Gỗ gụ quý chạm khắc tích cổ, thể hiện đẳng cấp gia chủ" },
+    { id: "ban_ghe_mun", name: "Bộ Ghế Gỗ Mun Chạm Rồng", category: "Nội thất", price: 28000, icon: "🪑", comfort: 25, desc: "Gỗ mun đen tuyền uy nghiêm, tay ngai chạm long phụng" },
+    { id: "trang_ky_huong", name: "Bộ Tràng Kỷ Gỗ Hương", category: "Nội thất", price: 45000, icon: "✨", comfort: 40, desc: "Hương gỗ ngào ngạt, vân mây uốn lượn tuyệt mỹ" },
+    { id: "ban_tra_dao", name: "Bàn Trà Đạo Gỗ Trắc", category: "Nội thất", price: 18000, icon: "🍵", comfort: 20, desc: "Bàn trà nguyên khối đãi khách quý thưởng trà đàm đạo" },
+    // Tranh & Nghệ thuật
+    { id: "tranh_dong_ho", name: "Tranh Đông Hồ 'Vinh Hoa'", category: "Trang trí", price: 8000, icon: "🖼️", comfort: 10, desc: "Tranh khắc gỗ dân gian trên giấy điệp lấp lánh" },
+    { id: "tranh_tu_binh", name: "Bộ Tranh Tứ Bình Tùng Cúc Trúc Mai", category: "Trang trí", price: 16000, icon: "🎋", comfort: 18, desc: "Biểu trưng cho 4 mùa phú quý bình an" },
+    { id: "den_long_ngu_sac", name: "Cặp Đèn Lồng Lụa Ngũ Sắc", category: "Trang trí", price: 6500, icon: "🏮", comfort: 8, desc: "Tỏa ánh sáng lung linh ấm áp mỗi khi đêm về" },
+    { id: "cong_chieng_dong", name: "Cồng Chiêng Tây Nguyên Đồng Đỏ", category: "Trang trí", price: 22000, icon: "🔔", comfort: 22, desc: "Âm vang núi rừng đại ngàn rước tài lộc" },
+    // Ngoại thất & Cảnh quan sân vườn
+    { id: "hon_non_bo", name: "Hòn Non Bộ Phong Thủy", category: "Sân vườn", price: 32000, icon: "🏞️", comfort: 30, desc: "Tiểu cảnh non xanh nước biếc tụ khí sinh tài" },
+    { id: "be_ca_koi", name: "Bể Cá Chép Vàng & Cá Koi", category: "Sân vườn", price: 42000, icon: "🐟", comfort: 35, desc: "Đàn cá thong dong bơi lội rước vận may" },
+    { id: "gieng_nuoc_co", name: "Giếng Nước Cổ Đá Ong", category: "Sân vườn", price: 15000, icon: "🪣", comfort: 15, desc: "Giếng làng rêu phong nước ngọt trong veo" },
+    { id: "mai_vang_co", name: "Cây Mai Vàng Cổ Thụ", category: "Sân vườn", price: 26000, icon: "🌼", comfort: 24, desc: "Hoa nở vàng rực bốn mùa đại cát đại lợi" },
+    { id: "dao_phai_bac", name: "Chậu Đào Phai Xứ Bắc", category: "Sân vườn", price: 24000, icon: "🌸", comfort: 22, desc: "Sắc hoa xuân thắm đượm hương vị Tết cổ truyền" },
+    { id: "gian_hoa_giay", name: "Giàn Hoa Giấy Tím Rực Rỡ", category: "Sân vườn", price: 14000, icon: "🌺", comfort: 16, desc: "Bao phủ hiên nhà thơ mộng như phố cổ Hội An" }
+  ]
+};
+
 // Vận tốc di chuyển
 const MOVE_SPEED = 6.0;
 
-module.exports = {
-  GOODS,
-  MARKET_EVENTS,
-  STALL_COST,
-  STALL_UPGRADE_COSTS,
-  HIRE_STAFF_COST,
-  GACHA_COST,
-  QUESTS_CONFIG,
-  DAY_LENGTH,
-  TICK_RATE,
-  MAX_PLAYERS,
-  INITIAL_MONEY,
-  MIN_NICKNAME_LENGTH,
-  MAX_NICKNAME_LENGTH,
-  MOVE_SPEED,
-};
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    GOODS,
+    MARKET_EVENTS,
+    STALL_COST,
+    STALL_UPGRADE_COSTS,
+    HIRE_STAFF_COST,
+    GACHA_COST,
+    QUESTS_CONFIG,
+    HOUSING_CONFIG,
+    DAY_LENGTH,
+    TICK_RATE,
+    MAX_PLAYERS,
+    INITIAL_MONEY,
+    MIN_NICKNAME_LENGTH,
+    MAX_NICKNAME_LENGTH,
+    MOVE_SPEED,
+  };
+}
+
+if (typeof window !== "undefined") {
+  window.GameConstants = {
+    GOODS,
+    MARKET_EVENTS,
+    STALL_COST,
+    STALL_UPGRADE_COSTS,
+    HIRE_STAFF_COST,
+    GACHA_COST,
+    QUESTS_CONFIG,
+    HOUSING_CONFIG,
+    DAY_LENGTH,
+    TICK_RATE,
+    MAX_PLAYERS,
+    INITIAL_MONEY,
+    MIN_NICKNAME_LENGTH,
+    MAX_NICKNAME_LENGTH,
+    MOVE_SPEED,
+  };
+  window.HOUSING_CONFIG = HOUSING_CONFIG;
+}

@@ -24,7 +24,17 @@ function startOfflineDemo(nick) {
   myPlayer.affinity = 15;
   myPlayer.socialTitle = 'Khách Tham Quan';
   myPlayer.collection = {};
-  myPlayer.houseConfig = { privacy: 'public', guestbook: [] };
+  myPlayer.houseConfig = {
+    level: 1,
+    privacy: 'public',
+    wall: '#fef08a',
+    furniture: 'Sập Gụ Tủ Chè',
+    tree: 'Hoa Mai Vàng',
+    items: ['sap_gu', 'mai_vang_co'],
+    guestbook: [
+      { author: 'Bác Năm Thợ Xây', note: 'Chào mừng bạn đến với khu dân cư thị trấn! Nhà cửa khang trang quá!' }
+    ]
+  };
   myPlayer.roomId = 'demo-tour';
   myPlayer.pos = { x: 0, z: 6 };
 
@@ -37,6 +47,9 @@ function startOfflineDemo(nick) {
 
   if (typeof init3D === 'function') {
     init3D();
+  }
+  if (typeof updatePlayerHouse3D === 'function') {
+    updatePlayerHouse3D(myPlayer.houseConfig.level || 1, myPlayer.houseConfig);
   }
 
   if (myPlayer.mesh && scene) {
@@ -666,8 +679,25 @@ function joinGame() {
     if (patch.affinity !== undefined) myPlayer.affinity = patch.affinity;
     if (patch.socialTitle !== undefined) myPlayer.socialTitle = patch.socialTitle;
     if (patch.collection !== undefined) myPlayer.collection = patch.collection;
-    if (patch.houseConfig !== undefined) myPlayer.houseConfig = patch.houseConfig;
+    if (patch.houseConfig !== undefined) {
+      myPlayer.houseConfig = patch.houseConfig;
+      if (typeof window.updatePlayerHouse3D === 'function') {
+        window.updatePlayerHouse3D(myPlayer.houseConfig.level || 0, myPlayer.houseConfig);
+      }
+    }
     updateHUD();
+  });
+
+  socket.on('house_updated', (data) => {
+    if (data && data.nickname === myPlayer.nickname) {
+      myPlayer.houseConfig = data.houseConfig;
+      if (typeof window.updatePlayerHouse3D === 'function') {
+        window.updatePlayerHouse3D(data.houseConfig.level || 0, data.houseConfig);
+      }
+      renderHouseBuildTab();
+      renderHouseShopTab();
+      renderHouseGuestbook();
+    }
   });
 }
 
@@ -1800,12 +1830,257 @@ function applyCustomizationNow() {
   closeModal('modal-customization');
 }
 
-/* ==================== 13. CĂN NHÀ RIÊNG TIỂU THƯƠNG & SỔ LƯU BÚT (PLAYER HOUSE) ==================== */
-let myHouseData = { wall: '#fef08a', furniture: 'Sập Gụ Tủ Chè', tree: 'Hoa Mai Vàng', privacy: 'public' };
+/* ==================== 13. BẤT ĐỘNG SẢN, XÂY NHÀ & NỘI THẤT (HOUSING SYSTEM) ==================== */
+let myHouseData = { level: 0, wall: '#fef08a', furniture: 'Sập Gụ Tủ Chè', tree: 'Hoa Mai Vàng', privacy: 'public', items: [] };
 try {
   const savedHouse = localStorage.getItem('my_house_data');
-  if (savedHouse) myHouseData = JSON.parse(savedHouse);
+  if (savedHouse) myHouseData = { ...myHouseData, ...JSON.parse(savedHouse) };
 } catch (e) {}
+
+function getHousingConfig() {
+  return (window.GameConstants && window.GameConstants.HOUSING_CONFIG) || window.HOUSING_CONFIG || {
+    plotCost: 10000,
+    levels: [
+      { level: 0, name: "Chưa Mua Đất", title: "Cư Dân Tự Do", cost: 0, desc: "Chưa sở hữu bất động sản tại thị trấn." },
+      { level: 1, name: "Nhà Mái Lá Quê Hương", title: "Chủ Đất Sơ Cấp", cost: 15000, desc: "Khuôn viên đất riêng, nhà tre mái lá tranh mộc mạc, giàn mướp và chum nước." },
+      { level: 2, name: "Nhà Gỗ Ba Gian", title: "Hộ Dân An Cư", cost: 35000, desc: "Cột gỗ lim chắc chắn, mái ngói âm dương đỏ au, hàng rào dâm bụt." },
+      { level: 3, name: "Nhà Phố Cổ Hội An", title: "Gia Đình Khá Giả", cost: 80000, desc: "Tường vàng nghệ tây rực rỡ, lồng đèn ngũ sắc, giàn hoa giấy tím trước ban công." },
+      { level: 4, name: "Biệt Thự Nhà Vườn", title: "Thương Gia Thành Đạt", cost: 180000, desc: "Sân gạch bát tràng thênh thang, hòn non bộ phong thủy, hồ cá koi và cổng tam quan." },
+      { level: 5, name: "Dinh Thự Hoàng Gia", title: "Đại Phú Hộ Thị Trấn", cost: 380000, desc: "Mái đao thếp vàng lưỡng long chầu nguyệt, đèn lụa cung đình lộng lẫy tột đỉnh." }
+    ],
+    items: []
+  };
+}
+
+function switchHouseTab(tabName) {
+  const tabs = ['build', 'shop', 'decor', 'guestbook'];
+  tabs.forEach(t => {
+    const el = document.getElementById(`house-tab-${t}`);
+    const btn = document.getElementById(`house-tab-btn-${t}`);
+    if (el) el.style.display = t === tabName ? 'block' : 'none';
+    if (btn) btn.classList.toggle('active', t === tabName);
+  });
+
+  if (tabName === 'build') renderHouseBuildTab();
+  else if (tabName === 'shop') renderHouseShopTab();
+  else if (tabName === 'decor') renderHouseDecorTab();
+  else if (tabName === 'guestbook') renderHouseGuestbook();
+}
+
+function renderHouseBuildTab() {
+  const card = document.getElementById('house-build-card');
+  if (!card) return;
+
+  const cfg = getHousingConfig();
+  const hc = myPlayer.houseConfig || {};
+  const currentLvl = hc.level || 0;
+  const currentTier = (cfg.levels && cfg.levels[currentLvl]) || { name: 'Nhà Ở', title: 'Cư Dân', desc: '' };
+  const items = Array.isArray(hc.items) ? hc.items : [];
+
+  let comfortScore = 0;
+  items.forEach(id => {
+    const it = cfg.items && cfg.items.find(x => x.id === id);
+    if (it) comfortScore += it.comfort || 10;
+  });
+
+  const nextLvl = currentLvl + 1;
+  const nextTier = nextLvl <= 5 && cfg.levels ? cfg.levels[nextLvl] : null;
+  const upgradeCost = nextLvl === 1 ? (cfg.plotCost || 10000) : (nextTier ? nextTier.cost : 0);
+
+  const tierBadges = ['🏕️', '🛖', '🏠', '🏮', '🏡', '🏯'];
+
+  let html = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:32px;">${tierBadges[currentLvl] || '🏠'}</span>
+          <div>
+            <div style="font-size:16px; font-weight:800; color:var(--gold);">${currentTier.name}</div>
+            <div style="font-size:12px; color:#38bdf8; font-weight:700;">Danh Hiệu: ${currentTier.title}</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right; background:rgba(255,255,255,0.06); padding:6px 12px; border-radius:10px;">
+        <div style="font-size:11px; color:var(--text-muted);">Phong Thủy & Tiện Nghi</div>
+        <div style="font-size:16px; font-weight:800; color:#4ade80;">✨ ${comfortScore} Điểm</div>
+      </div>
+    </div>
+
+    <p style="font-size:12.5px; color:#e2e8f0; line-height:1.55; margin-bottom:12px; background:rgba(0,0,0,0.25); padding:10px; border-radius:8px;">
+      ${currentTier.desc}
+    </p>
+  `;
+
+  if (nextTier) {
+    const canAfford = (myPlayer.money || 0) >= upgradeCost;
+    html += `
+      <div style="background:rgba(251,191,36,0.08); border:1px dashed var(--gold); border-radius:10px; padding:12px; margin-bottom:14px;">
+        <div style="font-size:12px; color:var(--gold); font-weight:700; margin-bottom:4px;">
+          ${nextLvl === 1 ? '📍 Đất Nền Khu Dân Cư Đang Mở Bán:' : '🔨 Nâng Cấp Tiếp Theo: ' + nextTier.name}
+        </div>
+        <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px;">${nextTier.desc}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; font-weight:700; color:#fde68a;">Chi phí: ${upgradeCost.toLocaleString()}đ</span>
+          <button class="btn-action btn-gold" style="padding:8px 16px; font-size:13px;" onclick="buyOrUpgradeHouseNow()" ${!canAfford ? 'style="opacity:0.6;"' : ''}>
+            ${nextLvl === 1 ? '💰 MUA ĐẤT SỔ ĐỎ & DỰNG NHÀ' : '🔨 NÂNG CẤP NHÀ NGAY'}
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `
+      <div style="background:rgba(34,197,94,0.15); border:1px solid #22c55e; border-radius:10px; padding:12px; text-align:center; color:#86efac; font-weight:700; font-size:13px; margin-bottom:12px;">
+        👑 Bạn đã đạt cấp tột đỉnh: Dinh Thự Hoàng Gia! Uy thế lừng lẫy khắp chợ quê và sông nước!
+      </div>
+    `;
+  }
+
+  html += `
+    <div style="font-size:11.5px; color:var(--text-muted); text-align:center;">
+      💡 Tip: Kiếm tiền bằng cách bán hàng tại sạp, tâng cầu, câu cá, kéo co, thắng Bầu Cua để nâng cấp nhà và sắm nội ngoại thất!
+    </div>
+  `;
+
+  card.innerHTML = html;
+}
+
+function buyOrUpgradeHouseNow() {
+  initAudio();
+  const cfg = getHousingConfig();
+  const hc = myPlayer.houseConfig || {};
+  const currentLvl = hc.level || 0;
+  const nextLvl = currentLvl + 1;
+  const upgradeCost = nextLvl === 1 ? (cfg.plotCost || 10000) : (cfg.levels && cfg.levels[nextLvl] ? cfg.levels[nextLvl].cost : 0);
+
+  if ((myPlayer.money || 0) < upgradeCost) {
+    showToast(`Bạn cần ${upgradeCost.toLocaleString()}đ để nâng cấp! Hãy buôn bán hoặc tham gia mini-game kiếm thêm tiền nhé!`);
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('buyOrUpgradeHouse', {}, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Không thể nâng cấp nhà lúc này!');
+        return;
+      }
+      if (res.money !== undefined) myPlayer.money = res.money;
+      myPlayer.houseConfig = res.houseConfig;
+      updateHUD();
+      if (typeof window.updatePlayerHouse3D === 'function') {
+        window.updatePlayerHouse3D(myPlayer.houseConfig.level || 0, myPlayer.houseConfig);
+      }
+      playSound('fanfare');
+      showToast(res.message || '🎉 Nâng cấp nhà thành công!');
+      renderHouseBuildTab();
+    });
+  } else {
+    // Chế độ ngoại tuyến / Demo fallback
+    myPlayer.money -= upgradeCost;
+    if (!myPlayer.houseConfig) myPlayer.houseConfig = {};
+    myPlayer.houseConfig.level = nextLvl;
+    updateHUD();
+    if (typeof window.updatePlayerHouse3D === 'function') {
+      window.updatePlayerHouse3D(nextLvl, myPlayer.houseConfig);
+    }
+    playSound('fanfare');
+    showToast(`🎉 Chúc mừng bạn đã nâng cấp nhà lên Cấp ${nextLvl}!`);
+    renderHouseBuildTab();
+  }
+}
+
+function renderHouseShopTab() {
+  const grid = document.getElementById('house-items-grid');
+  if (!grid) return;
+
+  const cfg = getHousingConfig();
+  const items = cfg.items || [];
+  const hc = myPlayer.houseConfig || {};
+  const ownedItems = Array.isArray(hc.items) ? hc.items : [];
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:12px;">Đang tải danh mục hàng hóa...</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  items.forEach(it => {
+    const isOwned = ownedItems.includes(it.id);
+    const card = document.createElement('div');
+    card.className = 'good-card';
+    card.style.cssText = 'padding:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(251,191,36,0.25); border-radius:12px; display:flex; flex-direction:column; justify-content:space-between;';
+    
+    card.innerHTML = `
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:24px;">${it.icon || '📦'}</span>
+          <span style="font-size:11px; background:rgba(34,197,94,0.15); color:#4ade80; padding:2px 6px; border-radius:6px; font-weight:700;">+${it.comfort} Phong Thủy</span>
+        </div>
+        <div style="font-size:13px; font-weight:700; color:var(--gold); margin-bottom:2px;">${escapeHtml(it.name)}</div>
+        <div style="font-size:10.5px; color:#94a3b8; line-height:1.4; margin-bottom:6px;">${escapeHtml(it.desc)}</div>
+      </div>
+      <div>
+        <div style="font-size:12px; font-weight:800; color:#fde68a; margin-bottom:6px;">💰 ${it.price.toLocaleString()}đ</div>
+        ${isOwned 
+          ? '<button class="chip-btn" style="width:100%; justify-content:center; opacity:0.6; cursor:default;" disabled>✔ Đã Sở Hữu</button>'
+          : `<button class="btn-action btn-gold" style="width:100%; justify-content:center; padding:6px 0; font-size:12px;" onclick="buyHouseItemNow('${it.id}')">Mua Ngay</button>`
+        }
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function buyHouseItemNow(itemId) {
+  initAudio();
+  const cfg = getHousingConfig();
+  const it = cfg.items && cfg.items.find(x => x.id === itemId);
+  if (!it) return;
+
+  if ((myPlayer.money || 0) < it.price) {
+    showToast(`Bạn cần ${it.price.toLocaleString()}đ để sắm "${it.name}"!`);
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('buyHouseItem', { itemId }, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Không thể mua vật phẩm lúc này!');
+        return;
+      }
+      if (res.money !== undefined) myPlayer.money = res.money;
+      myPlayer.houseConfig = res.houseConfig;
+      updateHUD();
+      if (typeof window.updatePlayerHouse3D === 'function') {
+        window.updatePlayerHouse3D(myPlayer.houseConfig.level || 0, myPlayer.houseConfig);
+      }
+      playSound('buy');
+      showToast(res.message || `Đã sắm thành công ${it.name}!`);
+      renderHouseShopTab();
+    });
+  } else {
+    // Offline demo fallback
+    myPlayer.money -= it.price;
+    if (!myPlayer.houseConfig) myPlayer.houseConfig = {};
+    if (!Array.isArray(myPlayer.houseConfig.items)) myPlayer.houseConfig.items = [];
+    myPlayer.houseConfig.items.push(itemId);
+    updateHUD();
+    if (typeof window.updatePlayerHouse3D === 'function') {
+      window.updatePlayerHouse3D(myPlayer.houseConfig.level || 0, myPlayer.houseConfig);
+    }
+    playSound('buy');
+    showToast(`Đã sắm thành công ${it.name}!`);
+    renderHouseShopTab();
+  }
+}
+
+function renderHouseDecorTab() {
+  const hc = myPlayer.houseConfig || {};
+  const priv = hc.privacy || 'public';
+  ['public', 'friends', 'private'].forEach(p => {
+    const btn = document.getElementById(`privacy-btn-${p}`);
+    if (btn) btn.classList.toggle('active', p === priv);
+  });
+}
 
 function renderHouseGuestbook() {
   const listEl = document.getElementById('house-guestbook-list');
@@ -1821,65 +2096,89 @@ function renderHouseGuestbook() {
   guestbook.forEach((entry) => {
     const row = document.createElement('div');
     row.style.cssText = 'font-size:12px; background:rgba(255,255,255,0.05); border-radius:8px; padding:6px 8px;';
-    row.innerHTML = `<b style="color:#fde68a;">${escapeHtml(entry.author || 'Bạn hiền')}:</b> ${escapeHtml(entry.message || '')}`;
+    row.innerHTML = `<b style="color:#fde68a;">${escapeHtml(entry.author || 'Bạn hiền')}:</b> ${escapeHtml(entry.note || entry.message || '')}`;
     listEl.appendChild(row);
   });
 }
 
 function openHouseModal() {
-  renderHouseGuestbook();
+  switchHouseTab('build');
   openModal('modal-house');
 }
 
 function setHousePrivacy(privacy) {
   myHouseData.privacy = privacy;
-  if (socket) {
+  if (!myPlayer.houseConfig) myPlayer.houseConfig = {};
+  myPlayer.houseConfig.privacy = privacy;
+  renderHouseDecorTab();
+
+  if (socket && socket.connected) {
     socket.emit('updateHouse', { privacy }, (res) => {
       if (res && res.ok) {
         myPlayer.houseConfig = res.houseConfig;
         showToast(`🏠 Đã cập nhật quyền mở cửa nhà: ${privacy}!`);
       }
     });
+  } else {
+    showToast(`🏠 Đã chuyển chế độ mở cửa: ${privacy}!`);
   }
 }
 
 function signHouseGuestbookNow() {
   const input = document.getElementById('house-guestbook-input');
   const message = (input && input.value.trim()) || '';
-  if (!message || !socket) return;
-  socket.emit('signHouseGuestbook', { ownerNick: myPlayer.nickname, message }, (res) => {
-    if (!res || !res.ok) {
-      showToast((res && res.error) || 'Không thể ghi sổ lưu bút!');
-      return;
-    }
+  if (!message) return;
+
+  if (socket && socket.connected) {
+    socket.emit('signHouseGuestbook', { ownerNick: myPlayer.nickname, message }, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Không thể ghi sổ lưu bút!');
+        return;
+      }
+      if (input) input.value = '';
+      if (!myPlayer.houseConfig) myPlayer.houseConfig = { privacy: 'public', guestbook: [] };
+      myPlayer.houseConfig.guestbook = res.guestbook || [];
+      renderHouseGuestbook();
+      playSound('fanfare');
+      showToast('✍️ Đã ghi lời chúc vào Sổ Lưu Bút Nhà Riêng!');
+    });
+  } else {
     if (input) input.value = '';
     if (!myPlayer.houseConfig) myPlayer.houseConfig = { privacy: 'public', guestbook: [] };
-    myPlayer.houseConfig.guestbook = res.guestbook || [];
+    if (!Array.isArray(myPlayer.houseConfig.guestbook)) myPlayer.houseConfig.guestbook = [];
+    myPlayer.houseConfig.guestbook.unshift({ author: myPlayer.nickname, message, time: Date.now() });
     renderHouseGuestbook();
     playSound('fanfare');
     showToast('✍️ Đã ghi lời chúc vào Sổ Lưu Bút Nhà Riêng!');
-  });
+  }
 }
 
 function decorateHouse(part, val) {
   myHouseData[part] = val;
+  if (!myPlayer.houseConfig) myPlayer.houseConfig = {};
+  myPlayer.houseConfig[part] = val;
   try {
     localStorage.setItem('my_house_data', JSON.stringify(myHouseData));
   } catch (e) {}
-  if (socket) {
+
+  if (socket && socket.connected) {
     socket.emit('updateHouse', { [part]: val }, () => {});
   }
+  if (typeof window.updatePlayerHouse3D === 'function') {
+    window.updatePlayerHouse3D(myPlayer.houseConfig.level || 0, myPlayer.houseConfig);
+  }
   playSound('buy');
-  const partNames = { wall: 'Màu tường nhà', furniture: 'Bộ bàn ghế phòng khách', tree: 'Chậu cây trước hiên' };
+  const partNames = { wall: 'Màu tường nhà', furniture: 'Bộ bàn ghế phòng khách', tree: 'Cảnh quan trước hiên', yard: 'Cảnh quan sân vườn' };
   showToast(`🏠 Đã trang trí [${partNames[part] || part}]: ${val}!`);
 }
 
 function inviteFriendsToHouse() {
-  if (!socket) return;
-  socket.emit(
-    'chat',
-    `🏡 [Lời Mời Ghé Nhà] Mời bà con cô bác thị trấn ghé thăm Căn Nhà Riêng của tôi tại Phố Dân Cư uống trà và ghi sổ lưu bút nhé!`
-  );
+  if (socket && socket.connected) {
+    socket.emit(
+      'chat',
+      `🏡 [Lời Mời Ghé Nhà] Mời bà con cô bác thị trấn ghé thăm Nhà của tôi tại Phố Dân Cư uống trà và ngắm cảnh nhé!`
+    );
+  }
   playSound('fanfare');
   showToast('Đã gửi lời mời ghé nhà đến toàn thị trấn!');
   closeModal('modal-house');

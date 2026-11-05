@@ -15,6 +15,7 @@ const {
   GACHA_COST,
   DAY_LENGTH,
   INITIAL_MONEY,
+  HOUSING_CONFIG,
 } = require("../shared/constants");
 const {
   BOUNDS,
@@ -215,10 +216,32 @@ const CUSTOMER_DEFS = [
     role: "tea_host",
     homeZone: "tea_table_corner",
     waypoints: [
-      { x: -1.5, z: 12.5, wait: 7000, dialog: "Trà đá đường hay nhân trần đây bà con ơi? Mời ngồi!" },
-      { x: 1.5, z: 12.5, wait: 6000, dialog: "Cắn hạt hướng dương, nhâm nhi cốc trà đá mát lạnh nhé!" },
-      { x: -5.5, z: 13.5, wait: 7000, dialog: "Nước mía siêu sạch vừa ép xong, ngọt lịm thơm mùi tắc!" },
-      { x: 5.5, z: 13.5, wait: 7000, dialog: "Tiếng đàn guitar acoustic nghe êm đềm quá!" }
+      { x: -8.0, z: 27.0, wait: 7000, dialog: "Trà đá vỉa hè bến sông mát rượi, mời bà con dừng chân nghỉ ngơi!" },
+      { x: -6.0, z: 27.0, wait: 6000, dialog: "Hạt hướng dương giòn rụm, trà chanh thanh mát ngắm cảnh sông nước!" },
+      { x: -10.0, z: 27.0, wait: 7000, dialog: "Nước mía siêu sạch vừa ép xong, ngọt lịm thơm mùi tắc!" },
+      { x: -8.0, z: 29.0, wait: 7000, dialog: "Tiếng đàn guitar acoustic êm đềm bên bến đò quê hương!" }
+    ]
+  },
+  {
+    name: "Chú Ba Bầu Cua",
+    type: "nonla",
+    role: "host",
+    homeZone: "bau_cua_booth",
+    waypoints: [
+      { x: -48.0, z: -14.0, wait: 7000, dialog: "Bầu cua tôm cá, lắc đều tay mở liền tay! Ai may mắn rinh thưởng nào!" },
+      { x: -46.0, z: -16.0, wait: 6000, dialog: "Cược con cua, bắt con tôm, trúng lớn nhân 3 tiền thưởng nghen bà con!" },
+      { x: -50.0, z: -16.0, wait: 7000, dialog: "Sới Bầu Cua bên hồ thơ mộng, ghé thử vận may đầu xuân đi!" }
+    ]
+  },
+  {
+    name: "Bác Năm Thợ Xây",
+    type: "helmet",
+    role: "builder",
+    homeZone: "residential_housing_estate",
+    waypoints: [
+      { x: 48.0, z: 20.0, wait: 8000, dialog: "Khu dân cư đang mở bán đất nền sổ đỏ 10.000đ! Mau dựng nhà an cư lạc nghiệp nào!" },
+      { x: 50.0, z: 23.0, wait: 7000, dialog: "Từ nhà tranh vách nứa lên biệt thự nhà vườn, dinh thự hoàng gia khang trang lắm!" },
+      { x: 46.0, z: 23.0, wait: 8000, dialog: "Sắm thêm sập gụ tủ chè, hòn non bộ, bể cá Koi cho gia thất vượng tài nhé!" }
     ]
   },
   {
@@ -272,9 +295,9 @@ const CUSTOMER_DEFS = [
     role: "kid",
     homeZone: "shuttlecock_court",
     waypoints: [
-      { x: 4.5, z: -13.5, wait: 6000, dialog: "Cú tâng cầu vừa rồi khéo quá! Ai vào so tài với cháu không?" },
-      { x: 11.5, z: -13.5, wait: 7000, dialog: "Đá cầu kiểng phải giữ thăng bằng chuẩn bài nha!" },
-      { x: 8.0, z: -11.0, wait: 8000, dialog: "Hoan hô! Lên khán đài cổ vũ cho các tuyển thủ nào!" }
+      { x: 46.5, z: -16.0, wait: 6000, dialog: "Cú tâng cầu khéo quá! Ai vào sân thể thao so tài không?" },
+      { x: 49.5, z: -16.0, wait: 7000, dialog: "Đá cầu kiểng phải giữ thăng bằng chuẩn bài nha!" },
+      { x: 48.0, z: -13.5, wait: 8000, dialog: "Hoan hô! Lên khán đài cổ vũ cho các tuyển thủ nào!" }
     ]
   },
   {
@@ -465,10 +488,10 @@ let bauCuaRound = {
   ],
 };
 
-// Bàn Trà Đá Vỉa Hè (Giữ tương thích ngược + liên kết với server/seats.js)
+// Bàn Trà Đá Vỉa Hè Bờ Sông (Tọa độ x: -8, z: 27)
 const TEA_TABLE = {
-  x: 0,
-  z: 13.5,
+  x: -8,
+  z: 27,
   seatedPlayers: [],
 };
 
@@ -1644,10 +1667,10 @@ function getFriendsStatus(nickname) {
   });
 }
 
-// Vòng Đá Cầu Kiểng Tập Thể Giữa Sân Chợ (Tọa độ x: 8, z: -15)
+// Sân Đá Cầu Kiểng Thể Thao Phía Đông (Tọa độ x: 48, z: -16)
 const SHUTTLECOCK_COURT = {
-  x: 8,
-  z: -15,
+  x: 48,
+  z: -16,
   combo: 0,
   maxCombo: 15,
   lastKicker: "Bác Ba Phi",
@@ -1717,11 +1740,13 @@ function updatePlayerHouse(nickname, patch = {}) {
   if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
 
   const hc = p.houseConfig || {
+    level: 0,
     privacy: "public",
     wall: "#fef08a",
     furniture: "Sập Gụ Tủ Chè",
     tree: "Hoa Mai Vàng",
     guestbook: [],
+    items: [],
   };
   if (patch.privacy && ["public", "friends", "locked"].includes(patch.privacy)) {
     hc.privacy = patch.privacy;
@@ -1729,10 +1754,105 @@ function updatePlayerHouse(nickname, patch = {}) {
   if (patch.wall) hc.wall = sanitizeText(patch.wall, 24);
   if (patch.furniture) hc.furniture = sanitizeText(patch.furniture, 40);
   if (patch.tree) hc.tree = sanitizeText(patch.tree, 40);
+  if (patch.yard) hc.yard = sanitizeText(patch.yard, 40);
 
   p.houseConfig = hc;
   upsertPlayer(nickname, { houseConfig: hc });
   return { ok: true, houseConfig: hc };
+}
+
+function buyOrUpgradeHouse(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+
+  const hc = p.houseConfig || {
+    level: 0,
+    privacy: "public",
+    wall: "#fef08a",
+    furniture: "Sập Gụ Tủ Chè",
+    tree: "Hoa Mai Vàng",
+    guestbook: [],
+    items: [],
+  };
+
+  const currentLevel = hc.level || 0;
+  if (currentLevel >= 5) {
+    return { ok: false, error: "Nhà của bạn đã đạt cấp tối đa (Cấp 5 - Dinh Thự Hoàng Gia)!" };
+  }
+
+  const nextLevel = currentLevel + 1;
+  const cost = nextLevel === 1 ? (HOUSING_CONFIG.plotCost || 10000) : (HOUSING_CONFIG.levels[nextLevel]?.cost || 25000);
+
+  if ((p.money || 0) < cost) {
+    return {
+      ok: false,
+      error: `Bạn cần ${cost.toLocaleString()}đ để ${nextLevel === 1 ? 'mua đất xây nhà' : 'nâng cấp nhà lên ' + HOUSING_CONFIG.levels[nextLevel].name}! Số dư hiện có: ${(p.money || 0).toLocaleString()}đ.`
+    };
+  }
+
+  p.money -= cost;
+  hc.level = nextLevel;
+  hc.levelName = HOUSING_CONFIG.levels[nextLevel].name;
+  hc.title = HOUSING_CONFIG.levels[nextLevel].title;
+  p.houseConfig = hc;
+
+  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  return {
+    ok: true,
+    message: nextLevel === 1 ? "🎉 Chúc mừng bạn đã sở hữu lô đất nền và dựng xong Nhà Mái Lá Quê Hương!" : `🎉 Chúc mừng bạn đã nâng cấp nhà thành công lên ${HOUSING_CONFIG.levels[nextLevel].name}!`,
+    money: p.money,
+    houseConfig: hc,
+  };
+}
+
+function buyHouseItem(nickname, itemId) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+
+  const item = HOUSING_CONFIG.items.find(i => i.id === itemId);
+  if (!item) return { ok: false, error: "Vật phẩm nội ngoại thất không tồn tại!" };
+
+  const hc = p.houseConfig || {
+    level: 0,
+    privacy: "public",
+    wall: "#fef08a",
+    furniture: "Sập Gụ Tủ Chè",
+    tree: "Hoa Mai Vàng",
+    guestbook: [],
+    items: [],
+  };
+
+  if ((hc.level || 0) < 1) {
+    return { ok: false, error: "Bạn cần mua đất dựng nhà (Cấp 1 trở lên) trước khi sắm sửa đồ đạc!" };
+  }
+
+  if (!Array.isArray(hc.items)) hc.items = [];
+  if (hc.items.includes(itemId)) {
+    return { ok: false, error: `Bạn đã sở hữu "${item.name}" rồi!` };
+  }
+
+  if ((p.money || 0) < item.price) {
+    return {
+      ok: false,
+      error: `Bạn cần ${item.price.toLocaleString()}đ để mua "${item.name}"! Số dư hiện có: ${(p.money || 0).toLocaleString()}đ.`
+    };
+  }
+
+  p.money -= item.price;
+  hc.items.push(itemId);
+
+  if (item.category === "Nội thất") hc.furniture = item.name;
+  if (item.category === "Sân vườn") hc.tree = item.name;
+
+  p.houseConfig = hc;
+  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+
+  return {
+    ok: true,
+    message: `✨ Đã sắm thành công "${item.name}" (+${item.comfort} điểm phong thủy)!`,
+    money: p.money,
+    houseConfig: hc,
+  };
 }
 
 function signHouseGuestbook(ownerNick, authorNick, rawNote) {
@@ -1915,6 +2035,8 @@ module.exports = {
   addAffinity,
   unlockCollectionItem,
   updatePlayerHouse,
+  buyOrUpgradeHouse,
+  buyHouseItem,
   signHouseGuestbook,
   toggleBlockUser,
   getSnapshot,

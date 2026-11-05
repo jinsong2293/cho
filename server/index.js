@@ -210,6 +210,7 @@ io.on("connection", (socket) => {
             STALL_UPGRADE_COSTS: constants.STALL_UPGRADE_COSTS,
             HIRE_STAFF_COST: constants.HIRE_STAFF_COST,
             GACHA_COST: constants.GACHA_COST,
+            HOUSING_CONFIG: constants.HOUSING_CONFIG,
           },
           snapshot,
         });
@@ -670,6 +671,42 @@ io.on("connection", (socket) => {
     if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
     const res = world.updatePlayerHouse(userNickname, patch || {});
     if (ack) ack(res);
+    if (res.ok && playerRoomId) {
+      io.to(playerRoomId).emit("house_updated", {
+        nickname: userNickname,
+        houseConfig: res.houseConfig,
+      });
+    }
+  });
+
+  socket.on("buyOrUpgradeHouse", (_, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.buyOrUpgradeHouse(userNickname);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.money });
+      if (playerRoomId) {
+        io.to(playerRoomId).emit("house_updated", {
+          nickname: userNickname,
+          houseConfig: res.houseConfig,
+        });
+      }
+    }
+  });
+
+  socket.on("buyHouseItem", ({ itemId } = {}, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.buyHouseItem(userNickname, itemId);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.money });
+      if (playerRoomId) {
+        io.to(playerRoomId).emit("house_updated", {
+          nickname: userNickname,
+          houseConfig: res.houseConfig,
+        });
+      }
+    }
   });
 
   const handleSignGuestbook = ({ ownerNick, note, message } = {}, ack) => {
