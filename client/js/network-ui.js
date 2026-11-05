@@ -1,22 +1,175 @@
 /* ==================== SOCKET.IO NETWORK & GAMEPLAY ==================== */
 let myCustomization = { hat: 'non_la', outfit: 'ba_ba', color: 0xf59e0b };
 
+function startOfflineDemo(nick) {
+  const joinScreen = document.getElementById('join-screen');
+  if (!joinScreen) return;
+
+  const joinBtn = document.querySelector('#join-screen .join-btn.join-cta');
+  if (joinBtn) {
+    joinBtn.disabled = false;
+    joinBtn.textContent = '▶ VÀO CHỢ';
+  }
+
+  myPlayer.nickname = nick || 'TiểuThương_VN';
+  myPlayer.money = 25000;
+  myPlayer.inventory = { 'TraDa': 5, 'BanhMi': 2, 'NuocMia': 2 };
+  myPlayer.stalls = [];
+  myPlayer.quests = [
+    { id: 'q_explore', title: 'Dạo Phố Chợ 3D', desc: 'Đi bộ khám phá các khu vui chơi', current: 1, target: 1, reward: 5000, claimed: false }
+  ];
+  myPlayer.hoverboard = false;
+  myPlayer.friends = [];
+  myPlayer.blockedUsers = [];
+  myPlayer.affinity = 15;
+  myPlayer.socialTitle = 'Khách Tham Quan';
+  myPlayer.collection = {};
+  myPlayer.houseConfig = { privacy: 'public', guestbook: [] };
+  myPlayer.roomId = 'demo-tour';
+  myPlayer.pos = { x: 0, z: 6 };
+
+  const roomLabel = document.getElementById('current-room-label');
+  if (roomLabel) {
+    roomLabel.textContent = '🏮 Tham Quan Thị Trấn 3D (Tự Do)';
+  }
+
+  joinScreen.classList.remove('active');
+
+  if (typeof init3D === 'function') {
+    init3D();
+  }
+
+  if (myPlayer.mesh && scene) {
+    scene.remove(myPlayer.mesh.group);
+  }
+  if (typeof createCharacterMesh === 'function' && scene) {
+    myPlayer.mesh = createCharacterMesh(myCustomization, myPlayer.nickname);
+    myPlayer.mesh.group.position.set(myPlayer.pos.x, 0, myPlayer.pos.z);
+    scene.add(myPlayer.mesh.group);
+  }
+
+  if (controls && camera) {
+    const isPortrait = window.innerWidth < window.innerHeight;
+    camera.fov = isPortrait ? 60 : 48;
+    camera.updateProjectionMatrix();
+    controls.target.set(myPlayer.pos.x, 1.1, myPlayer.pos.z);
+    camera.position.set(myPlayer.pos.x, 3.8, myPlayer.pos.z + 5.8);
+    controls.update();
+  }
+
+  const demoStalls = [
+    { id: 'stall-1', position: { x: -14, z: -10 }, rotation: 0, owner: null, name: 'Sạp Nông Sản Chợ Quê', level: 1, goods: { 'RauMuong': { count: 20, price: 100 } } },
+    { id: 'stall-2', position: { x:  14, z: -10 }, rotation: 0, owner: null, name: 'Sạp Trái Cây Miền Tây', level: 1, goods: { 'ThanhLong': { count: 15, price: 150 } } },
+    { id: 'stall-3', position: { x: -14, z:  10 }, rotation: Math.PI, owner: null, name: 'Sạp Đồ Khô & Bánh Mứt', level: 1, goods: {} },
+    { id: 'stall-4', position: { x:  14, z:  10 }, rotation: Math.PI, owner: null, name: 'Sạp Gốm Sứ Bát Tràng', level: 1, goods: {} },
+    { id: 'stall-5', position: { x: -22, z:   0 }, rotation: Math.PI / 2, owner: null, name: 'Quán Trà Sen & Cà Phê', level: 1, goods: {} },
+    { id: 'stall-6', position: { x:  22, z:   0 }, rotation: -Math.PI / 2, owner: null, name: 'Sạp Hoa Tươi & Thủ Công', level: 1, goods: {} }
+  ];
+  if (typeof syncStalls === 'function') syncStalls(demoStalls);
+
+  const demoCustomers = [
+    { id: 'cust_tu_tra_da', name: 'Chị Tư Trà Đá', x: -2, z: 14, targetX: 2, targetZ: 14, speed: 1.2, hat: 'non_la', outfit: 'ba_ba', roleTitle: 'Chủ Quán Trà' },
+    { id: 'cust_chu_ba', name: 'Chú Ba Phố Cổ', x: 2, z: 13, targetX: -2, targetZ: 13, speed: 1.2, hat: 'mu_phot', outfit: 'ao_dai', roleTitle: 'Khách Đánh Cờ' },
+    { id: 'cust_be_na', name: 'Bé Na Tâng Cầu', x: 8, z: -15, targetX: 10, targetZ: -15, speed: 1.3, hat: 'non_la', outfit: 'ba_ba', roleTitle: 'Thiếu Nhi Đá Cầu' },
+    { id: 'cust_be_bo', name: 'Bé Bo Đón Cầu', x: 10, z: -16, targetX: 8, targetZ: -16, speed: 1.3, hat: 'mu_phot', outfit: 'ba_ba', roleTitle: 'Thiếu Nhi Đá Cầu' },
+    { id: 'cust_bac_to_truong', name: 'Bác Tổ Trưởng', x: -6, z: 0, targetX: 6, targetZ: 0, speed: 1.1, hat: 'mu_phot', outfit: 'ao_dai', roleTitle: 'Tổ Dân Phố' },
+    { id: 'cust_thay_minh', name: 'Thầy Minh Thư Pháp', x: 4, z: -4, targetX: -4, targetZ: -4, speed: 1.1, hat: 'non_la', outfit: 'ao_dai', roleTitle: 'Thư Pháp Sư' },
+    { id: 'cust_co_nam', name: 'Cô Năm Bát Tràng', x: 16, z: 8, targetX: 20, targetZ: 8, speed: 1.2, hat: 'non_la', outfit: 'ba_ba', roleTitle: 'Nghệ Nhân Gốm' },
+    { id: 'cust_chi_lan', name: 'Chị Lan Mây Tre', x: 20, z: 12, targetX: 16, targetZ: 12, speed: 1.2, hat: 'non_la', outfit: 'ao_dai', roleTitle: 'Nghệ Nhân Đan Lát' },
+    { id: 'cust_ca_si', name: 'Ca Sĩ Minh Quân', x: 0, z: -28, targetX: 0, targetZ: -32, speed: 1.2, hat: 'mu_phot', outfit: 'ao_dai', roleTitle: 'Nghệ Sĩ Acoustic' },
+    { id: 'cust_jack', name: 'Anh Tây Du Lịch Jack', x: -3, z: -30, targetX: 3, targetZ: -30, speed: 1.3, hat: 'mu_phot', outfit: 'ba_ba', roleTitle: 'Khách Du Lịch' },
+    { id: 'cust_ba_bay', name: 'Bà Bảy Bến Sông', x: 0, z: 30, targetX: 4, targetZ: 30, speed: 1.1, hat: 'non_la', outfit: 'ba_ba', roleTitle: 'Lái Đò Sông Quê' },
+    { id: 'cust_chu_chin', name: 'Chú Chín Thuyền Chài', x: -4, z: 32, targetX: 0, targetZ: 32, speed: 1.2, hat: 'non_la', outfit: 'ba_ba', roleTitle: 'Ngư Dân Đêm Hội' },
+  ];
+  if (typeof syncCustomers === 'function') syncCustomers(demoCustomers);
+
+  if (typeof initPetDog === 'function') initPetDog();
+  if (typeof initExpandedTownNetAndUI === 'function') initExpandedTownNetAndUI();
+  if (typeof updateGoldenHourHUD === 'function') updateGoldenHourHUD();
+  if (typeof syncWishingLanterns3D === 'function') syncWishingLanterns3D();
+
+  if (typeof showToast === 'function') {
+    showToast('🏮 Đã vào Chợ Thị Trấn 3D (Chế độ Tham quan)! Dạo phố vui vẻ nhé bà con.', 5000);
+  }
+  if (typeof addChatMessage === 'function') {
+    addChatMessage('Loa Phường', '📢 Chào mừng bà con đến với Chợ Thị Trấn Việt Nam 3D! Chúc bà con dạo chơi vui vẻ!', 'system', 'town');
+  }
+
+  if (typeof updateHUD === 'function') updateHUD();
+}
+
 function joinGame() {
-  initAudio();
+  try {
+    initAudio();
+  } catch (_) {}
+
   const input = document.getElementById('nickname-input');
   const roomInput = document.getElementById('room-code-input');
   const recInput = document.getElementById('recovery-code-input');
-  const nick = (input.value || "").trim() || `TiểuThương_${Math.floor(100 + Math.random() * 899)}`;
+  const nick = (input && input.value || "").trim() || `TiểuThương_${Math.floor(100 + Math.random() * 899)}`;
   const roomCode = (roomInput && roomInput.value.trim()) || "";
   const recoveryCode = (recInput && recInput.value.trim()) || "";
   const savedToken = localStorage.getItem('player_token') || "";
   const urlParams = new URLSearchParams(window.location.search);
   const debugFestival = urlParams.get('festival') || "";
+  const serverUrl = urlParams.get('server') || localStorage.getItem('server_url') || '';
+
+  const joinBtn = document.querySelector('#join-screen .join-btn.join-cta');
+  if (joinBtn) {
+    joinBtn.disabled = true;
+    joinBtn.textContent = '⏳ Đang vào chợ...';
+  }
+
+  const badge = document.getElementById('join-online-badge');
+  if (badge) {
+    badge.textContent = '🟡 Đang kết nối thị trấn...';
+  }
+
+  // Nếu không có Socket.IO, tự động mở chế độ tham quan offline ngay lập tức
+  if (typeof io === 'undefined') {
+    console.warn('[Network] Không tìm thấy Socket.IO, chuyển sang chế độ tham quan offline.');
+    startOfflineDemo(nick);
+    return;
+  }
 
   if (socket) {
-    socket.disconnect();
+    try { socket.disconnect(); } catch (_) {}
   }
-  socket = io();
+
+  let joined = false;
+
+  // Hẹn giờ dự phòng 3 giây: nếu server không phản hồi, tự động mở Chế độ Tham quan 3D
+  const connectionTimeout = setTimeout(() => {
+    if (!joined) {
+      const joinScreen = document.getElementById('join-screen');
+      if (joinScreen && joinScreen.classList.contains('active')) {
+        console.warn('[Network] Máy chủ phản hồi chậm hoặc đang ở máy chủ tĩnh. Tự động mở Chế độ Tham quan 3D.');
+        startOfflineDemo(nick);
+      }
+    }
+  }, 3000);
+
+  try {
+    socket = serverUrl
+      ? io(serverUrl, { timeout: 3500, transports: ['websocket', 'polling'] })
+      : io({ timeout: 3500, transports: ['websocket', 'polling'] });
+  } catch (err) {
+    console.warn('[Network error]', err);
+    clearTimeout(connectionTimeout);
+    startOfflineDemo(nick);
+    return;
+  }
+
+  socket.on('connect_error', (err) => {
+    console.warn('[Socket connect_error]', err);
+    if (!joined) {
+      const joinScreen = document.getElementById('join-screen');
+      if (joinScreen && joinScreen.classList.contains('active')) {
+        clearTimeout(connectionTimeout);
+        startOfflineDemo(nick);
+      }
+    }
+  });
 
   socket.on('connect', () => {
     socket.emit(
@@ -30,6 +183,14 @@ function joinGame() {
         festival: debugFestival,
       },
       (res) => {
+        joined = true;
+        clearTimeout(connectionTimeout);
+
+        if (joinBtn) {
+          joinBtn.disabled = false;
+          joinBtn.textContent = '▶ VÀO CHỢ';
+        }
+
         if (!res || !res.ok) {
           showToast((res && res.error) || 'Lỗi khi vào chợ!');
           if (res && res.code === 'NICKNAME_TAKEN' && Array.isArray(res.suggestions)) {
@@ -607,11 +768,13 @@ function openModal(id) {
   if (window.innerWidth <= 900 || document.body.classList.contains('mobile-mode')) {
     toggleDock(true);
   }
-  document.getElementById(id).classList.add('active');
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
 }
 
 function closeModal(id) {
-  document.getElementById(id).classList.remove('active');
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('active');
 }
 
 // 1. Chợ Đầu Mối (Wholesale) với Bộ Lọc Danh Mục & Tính Lãi Gộp

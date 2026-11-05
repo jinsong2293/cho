@@ -6,6 +6,7 @@ let scene, camera, renderer, controls;
 let dirLight, hemiLight, plazaMesh;
 let stallMeshes = {};
 let customerMeshes = {};
+window.customerMeshes = customerMeshes;
 let particleSystem = null;
 let rainSystem = null;
 let heatSystem = null;

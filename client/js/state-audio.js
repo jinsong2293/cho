@@ -73,6 +73,8 @@ let selectedWholesaleCategory = "Tất cả";
 const WEATHER_MODES = ['auto', 'rain', 'heatwave', 'blossom', 'clear'];
 let weatherOverrideIndex = 0; // 0 = auto
 let activeWeather = 'heatwave';
+window.getActiveWeather = () => activeWeather;
+window.getActiveWeatherMode = () => WEATHER_MODES[weatherOverrideIndex];
 
 const VIETNAMESE_MARKET_CRIES = [
   "Ai bánh mì Sài Gòn nóng giòn đặc biệt đây! 🥖",
