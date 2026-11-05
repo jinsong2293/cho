@@ -89,6 +89,8 @@ const QUESTS_CONFIG = [
   { id: "upgrade_stall", title: "Nâng cấp Kiot phố chợ", description: "Nâng cấp sạp hàng lên Cấp 2", target: 1, reward: 9000 },
   { id: "hire_worker", title: "Ông bà chủ nhàn hạ", description: "Thuê 1 phụ quán đứng bán hàng tự động", target: 1, reward: 12000 },
   { id: "play_gacha", title: "Thử vận may Lô Tô Hội Chợ", description: "Quay số Lô Tô Hội Chợ 1 lần", target: 1, reward: 3000 },
+  { id: "go_fishing", title: "Cần thủ bến sông", description: "Câu thành công 1 con cá hoặc tôm tại bến sông", target: 1, reward: 3000 },
+  { id: "own_house", title: "An cư lạc nghiệp", description: "Sở hữu mảnh đất hoặc ngôi nhà riêng đầu tiên", target: 1, reward: 5000 },
 ];
 
 // Thời gian & Thông số mạng

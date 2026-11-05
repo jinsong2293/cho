@@ -162,6 +162,7 @@ function initTapTargetMarker() {
   tapTargetMarker.position.y = 0.06;
   tapTargetMarker.visible = false;
   scene.add(tapTargetMarker);
+  window.tapTargetMarker = tapTargetMarker;
 }
 
 function onWindowResize() {

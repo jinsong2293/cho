@@ -243,11 +243,11 @@
   </div>
 </div>
 
-<!-- Modal: Toàn Bộ 27 Tính Năng Thị Trấn (5 Nhóm Gọn Gàng) -->
+<!-- Modal: Toàn Bộ 30 Tính Năng Thị Trấn (5 Nhóm Gọn Gàng) -->
 <div id="modal-full-menu" class="modal-overlay">
   <div class="modal-box" style="max-width:680px;">
     <div class="modal-header">
-      <h3>☰ TẤT CẢ TÍNH NĂNG PHỐ CHỢ (27)</h3>
+      <h3>☰ TẤT CẢ TÍNH NĂNG PHỐ CHỢ (30)</h3>
       <button class="modal-close" onclick="closeModal('modal-full-menu')">✕</button>
     </div>
     <div class="modal-body" style="max-height:75vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
@@ -287,7 +287,7 @@
           🏪 Buôn Bán & Kinh Doanh
         </div>
         <div class="menu-items-grid">
-          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); interactNearest();">
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openMyStallOrNearest();">
             <span class="icon">🏪</span>
             <div><div class="title">Quản Lý Sạp (E)</div><div class="desc">Thuê sạp, bày hàng tre, nâng cấp</div></div>
           </button>
@@ -302,6 +302,10 @@
           <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openLeaderboardModal();">
             <span class="icon">🏆</span>
             <div><div class="title">Bảng Vàng Phú Hộ (L)</div><div class="desc">Vinh danh triệu phú chợ Việt</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openBankModal();">
+            <span class="icon">🏦</span>
+            <div><div class="title">Ngân Hàng Thị Trấn</div><div class="desc">Gửi tiết kiệm lãi suất 5%/ngày</div></div>
           </button>
         </div>
       </div>
@@ -332,6 +336,10 @@
             <span class="icon">☕</span>
             <div><div class="title">Quán Trà Đá Vỉa Hè</div><div class="desc">Ngồi ghế nhựa đỏ nhâm nhi trò chuyện</div></div>
           </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openLotteryModal();">
+            <span class="icon">🎫</span>
+            <div><div class="title">Đại Lý Vé Số & Cào May Mắn</div><div class="desc">Vé số kiến thiết & cào trúng liền</div></div>
+          </button>
         </div>
       </div>
 
@@ -356,6 +364,10 @@
           <button class="menu-item-card" onclick="closeModal('modal-full-menu'); toggleHoverboard();">
             <span class="icon">🛵</span>
             <div><div class="title">Đi Xe Máy (Space)</div><div class="desc">Lướt nhanh khắp các góc phố chợ</div></div>
+          </button>
+          <button class="menu-item-card" onclick="closeModal('modal-full-menu'); openGarageModal();">
+            <span class="icon">🏍️</span>
+            <div><div class="title">Tiệm Độ Xe & Nước Sâm</div><div class="desc">Độ bốc 25m/s, sơn màu, nước sâm +40%</div></div>
           </button>
           <button class="menu-item-card" onclick="closeModal('modal-full-menu'); sendEmote('funny_meme');">
             <span class="icon">📢</span>

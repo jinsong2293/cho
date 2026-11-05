@@ -1465,7 +1465,9 @@ function goFishing(nickname) {
 
   p.money += caughtFish.price;
   unlockCollectionItem(nickname, `fish_${caughtFish.id}`);
-  upsertPlayer(nickname, { money: p.money });
+  progressPlayerQuest(nickname, "go_fishing", 1);
+  const updated = upsertPlayer(nickname, { money: p.money });
+  p.quests = updated.quests;
 
   eventsQueue.push({
     type: "player_caught_fish",
@@ -1480,6 +1482,7 @@ function goFishing(nickname) {
     ok: true,
     fish: caughtFish,
     money: p.money,
+    quests: p.quests,
   };
 }
 
@@ -1801,12 +1804,16 @@ function buyOrUpgradeHouse(nickname) {
   hc.title = HOUSING_CONFIG.levels[nextLevel].title;
   p.houseConfig = hc;
 
-  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  progressPlayerQuest(nickname, "own_house", 1);
+  const updated = upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  p.quests = updated.quests;
+
   return {
     ok: true,
     message: nextLevel === 1 ? "🎉 Chúc mừng bạn đã sở hữu lô đất nền và dựng xong Nhà Mái Lá Quê Hương!" : `🎉 Chúc mừng bạn đã nâng cấp nhà thành công lên ${HOUSING_CONFIG.levels[nextLevel].name}!`,
     money: p.money,
     houseConfig: hc,
+    quests: p.quests,
   };
 }
 

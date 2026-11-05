@@ -166,6 +166,7 @@ function joinGame() {
     socket = serverUrl
       ? io(serverUrl, { timeout: 3500, transports: ['websocket', 'polling'] })
       : io({ timeout: 3500, transports: ['websocket', 'polling'] });
+    window.socket = socket;
   } catch (err) {
     console.warn('[Network error]', err);
     clearTimeout(connectionTimeout);
@@ -597,7 +598,7 @@ function joinGame() {
         shuttlecockLabelSprite.scale.set(5.4, 1.08, 1);
         shuttlecockCourtGroup.add(shuttlecockLabelSprite);
       }
-      spawnFloatingPopup3D(8, 2.8, -15, `🪶 Combo x${shuttlecockAnim.combo}!`);
+      spawnFloatingPopup3D(48, 2.8, -16, `🪶 Combo x${shuttlecockAnim.combo}!`);
       playSound('jump');
       if (ev.combo % 5 === 0 || ev.nickname === myPlayer.nickname) {
         addChatMessage('Sân Đá Cầu', ev.message, 'buy', 'system');
@@ -996,6 +997,36 @@ function interactNearest() {
   }
 }
 
+function openMyStallOrNearest() {
+  const myStall = worldState.stalls && worldState.stalls.find((s) => s.owner === myPlayer.nickname);
+  if (myStall) {
+    currentInteractingStall = myStall;
+    renderStallModalContent(myStall);
+    openModal('modal-stall');
+    return;
+  }
+  let nearest = null;
+  let minD = 999;
+  if (worldState.stalls) {
+    worldState.stalls.forEach((s) => {
+      const px = (myPlayer && myPlayer.pos && myPlayer.pos.x) || 0;
+      const pz = (myPlayer && myPlayer.pos && myPlayer.pos.z) || 0;
+      const d = Math.hypot(px - s.position.x, pz - s.position.z);
+      if (d < minD) {
+        minD = d;
+        nearest = s;
+      }
+    });
+  }
+  if (nearest) {
+    currentInteractingStall = nearest;
+    renderStallModalContent(nearest);
+    openModal('modal-stall');
+  } else {
+    showToast('🏪 Chưa tìm thấy sạp hàng nào quanh đây!');
+  }
+}
+
 function renderStallModalContent(s) {
   const title = document.getElementById('stall-modal-title');
   const body = document.getElementById('stall-modal-body');
@@ -1200,6 +1231,10 @@ function spinGachaNow() {
       showToast((res && res.error) || 'Không đủ tiền mua vé Lô Tô!');
       return;
     }
+    if (res.money !== undefined) myPlayer.money = res.money;
+    if (res.inventory) myPlayer.inventory = res.inventory;
+    if (res.quests) myPlayer.quests = res.quests;
+    updateHUD();
     playSound('fanfare');
     if (myPlayer.mesh) {
       triggerCoinParticles(myPlayer.pos.x, 1.0, myPlayer.pos.z);
@@ -1574,7 +1609,7 @@ function toggleSitTeaTableNow() {
 
 function doAllTableCheer() {
   if (!socket) return;
-  socket.emit('chat', '🍻 [Quán Trà Đá] 1, 2, 3 DÔ! Chúc toàn thể bà con thị trấn buôn may bán đắt, vạn sự hanh thông!');
+  socket.emit('chat', { msg: '🍻 [Quán Trà Đá] 1, 2, 3 DÔ! Chúc toàn thể bà con thị trấn buôn may bán đắt, vạn sự hanh thông!', channel: 'town' });
   playSound('fanfare');
   showToast('🍻 Đã hô vang cụng ly trà đá cùng cả bàn!');
   closeModal('modal-tea-table');
@@ -1586,6 +1621,7 @@ let selectedLixiAmount = 2000;
 
 function openPlayerSocialModal(targetNick) {
   targetSocialNickname = targetNick;
+  window.targetSocialNickname = targetNick;
   const nameEl = document.getElementById('social-target-name');
   const statusEl = document.getElementById('social-target-status');
   if (nameEl) nameEl.innerText = targetNick;
@@ -1689,6 +1725,10 @@ function startFishingCast() {
         showToast((res && res.error) || 'Lỗi câu cá!');
         return;
       }
+
+      if (res.money !== undefined) myPlayer.money = res.money;
+      if (res.quests) myPlayer.quests = res.quests;
+      updateHUD();
 
       playSound('fanfare');
       if (myPlayer.mesh) {
@@ -2344,8 +2384,11 @@ function walkToFriend(x, z, nick) {
     tapTargetMarker.visible = true;
   }
   closeModal('modal-friends');
-  showToast(`🏃 Đang chạy tới hội ngộ cùng ${nick}!`);
+  closeModal('modal-goto');
+  closeModal('modal-full-menu');
+  showToast(`🏃 Đang chạy tới ${nick || 'điểm hẹn'}!`);
 }
+window.walkToFriend = walkToFriend;
 
 /* ==================== 15. NGÂN HÀNG, ĐẠI LÝ VÉ SỐ & TIỆM ĐỘ XE ==================== */
 let currentBankSavings = 0;
@@ -2754,6 +2797,79 @@ window.buyLotteryTicketNow = buyLotteryTicketNow;
 window.openGarageModal = openGarageModal;
 window.upgradeBikeNow = upgradeBikeNow;
 window.buyEnergyDrinkNow = buyEnergyDrinkNow;
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.openWholesaleModal = openWholesaleModal;
+window.buyWholesale = buyWholesale;
+window.interactNearest = interactNearest;
+window.openMyStallOrNearest = openMyStallOrNearest;
+window.renderStallModalContent = renderStallModalContent;
+window.rentStall = rentStall;
+window.stockGood = stockGood;
+window.withdrawGood = withdrawGood;
+window.upgradeStall = upgradeStall;
+window.hireStaff = hireStaff;
+window.openGachaModal = openGachaModal;
+window.spinGachaNow = spinGachaNow;
+window.openInventoryModal = openInventoryModal;
+window.openQuestsModal = openQuestsModal;
+window.claimQuest = claimQuest;
+window.openLeaderboardModal = openLeaderboardModal;
+window.selectBcChip = selectBcChip;
+window.openBauCuaModal = openBauCuaModal;
+window.placeBauCuaBet = placeBauCuaBet;
+window.renderBauCuaBoard = renderBauCuaBoard;
+window.openTeaTableModal = openTeaTableModal;
+window.updateTeaTableUI = updateTeaTableUI;
+window.toggleSitTeaTableNow = toggleSitTeaTableNow;
+window.doAllTableCheer = doAllTableCheer;
+window.openPlayerSocialModal = openPlayerSocialModal;
+window.doPlayerAction = doPlayerAction;
+window.toggleLixiInput = toggleLixiInput;
+window.selectLixiAmount = selectLixiAmount;
+window.sendLixiNow = sendLixiNow;
+window.openFishingModal = openFishingModal;
+window.startFishingCast = startFishingCast;
+window.openCommunityEventsModal = openCommunityEventsModal;
+window.toggleCreateEventForm = toggleCreateEventForm;
+window.renderCommunityEvents = renderCommunityEvents;
+window.submitNewCommunityEvent = submitNewCommunityEvent;
+window.joinEventNow = joinEventNow;
+window.openCustomizationModal = openCustomizationModal;
+window.selectCustomHat = selectCustomHat;
+window.selectCustomOutfit = selectCustomOutfit;
+window.selectCustomColor = selectCustomColor;
+window.applyCustomizationNow = applyCustomizationNow;
+window.getHousingConfig = getHousingConfig;
+window.switchHouseTab = switchHouseTab;
+window.renderHouseBuildTab = renderHouseBuildTab;
+window.buyOrUpgradeHouseNow = buyOrUpgradeHouseNow;
+window.renderHouseShopTab = renderHouseShopTab;
+window.buyHouseItemNow = buyHouseItemNow;
+window.renderHouseDecorTab = renderHouseDecorTab;
+window.renderHouseGuestbook = renderHouseGuestbook;
+window.openHouseModal = openHouseModal;
+window.setHousePrivacy = setHousePrivacy;
+window.signHouseGuestbookNow = signHouseGuestbookNow;
+window.decorateHouse = decorateHouse;
+window.inviteFriendsToHouse = inviteFriendsToHouse;
+window.kickShuttlecockNow = kickShuttlecockNow;
+window.addFriendNow = addFriendNow;
+window.addFriendByInput = addFriendByInput;
+window.openFriendsModal = openFriendsModal;
+window.renderFriendsList = renderFriendsList;
+window.walkToFriend = walkToFriend;
+window.openFullAppMenuModal = () => openModal('modal-full-menu');
+window.openProfileModal = () => openModal('modal-profile');
+window.showToast = showToast;
+window.updateHUD = updateHUD;
+window.escapeHtml = escapeHtml;
+window.joinGame = joinGame;
+window.sendChat = sendChat;
+window.sendEmote = sendEmote;
+window.toggleChat = toggleChat;
+window.toggleChatChannel = toggleChatChannel;
 
 /* ==================== KHỞI ĐỘNG ỨNG DỤNG ==================== */
 const savedNick = localStorage.getItem('last_nickname');

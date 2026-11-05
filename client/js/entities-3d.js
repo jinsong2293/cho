@@ -97,6 +97,7 @@ function initPetDog() {
     legBL,
     legBR,
   };
+  window.petDogMesh = petDogMesh;
 }
 
 function updatePetDog(dt, elapsedSec) {
@@ -139,7 +140,13 @@ function updatePetDog(dt, elapsedSec) {
 function callPetDog() {
   initAudio();
   playSound('fanfare');
-  if (petDogMesh) {
+  if (!petDogMesh) {
+    if (typeof initPetDog === 'function') initPetDog();
+  }
+  if (petDogMesh && petDogMesh.group) {
+    const px = (typeof myPlayer !== 'undefined' && myPlayer.pos && myPlayer.pos.x) || 0;
+    const pz = (typeof myPlayer !== 'undefined' && myPlayer.pos && myPlayer.pos.z) || 0;
+    petDogMesh.group.position.set(px + 1.2, 0, pz + 0.8);
     spawnFloatingPopup3D(
       petDogMesh.group.position.x,
       1.8,
@@ -148,11 +155,12 @@ function callPetDog() {
     );
     petDogMesh.group.position.y = 0.35;
     setTimeout(() => {
-      if (petDogMesh) petDogMesh.group.position.y = 0;
+      if (petDogMesh && petDogMesh.group) petDogMesh.group.position.y = 0;
     }, 280);
   }
   showToast("🐕 Cún Vàng chạy lại quấn quýt bên chân bạn, vẫy đuôi mừng rỡ!");
 }
+window.callPetDog = callPetDog;
 
 /* ==================== 5. HOẠT HỌA 3D BẦU CUA VÀ SÔNG NƯỚC ==================== */
 function updateBauCua3DAnimation(dt, elapsedSec) {
@@ -379,8 +387,8 @@ let shuttlecockAnim = {
   active: false,
   timer: 0,
   duration: 0.95,
-  startPos: new THREE.Vector3(8, 0.35, -15),
-  endPos: new THREE.Vector3(8, 0.35, -15),
+  startPos: new THREE.Vector3(48, 0.35, -16),
+  endPos: new THREE.Vector3(48, 0.35, -16),
   combo: 0,
   maxCombo: 0,
 };
@@ -1183,19 +1191,18 @@ function updateFireworksSystem(dt, elapsedSec, isNight) {
 
 function triggerFireworkCelebration() {
   initAudio();
-  if (myPlayer.mesh) {
-    const sx = myPlayer.pos.x;
-    const sz = myPlayer.pos.z;
-    const tx = sx + (Math.random() - 0.5) * 8;
-    const ty = 28 + Math.random() * 8;
-    const tz = sz + (Math.random() - 0.5) * 8;
-    launchFireworkRocket(sx, sz, tx, ty, tz, 'random');
-    showToast('🎆 Bắn pháo hoa rực rỡ lên bầu trời đêm!');
-  }
-  if (socket) {
+  const sx = (typeof myPlayer !== 'undefined' && myPlayer.pos && myPlayer.pos.x) || 0;
+  const sz = (typeof myPlayer !== 'undefined' && myPlayer.pos && myPlayer.pos.z) || 0;
+  const tx = sx + (Math.random() - 0.5) * 8;
+  const ty = 28 + Math.random() * 8;
+  const tz = sz + (Math.random() - 0.5) * 8;
+  launchFireworkRocket(sx, sz, tx, ty, tz, 'random');
+  showToast('🎆 Bắn pháo hoa rực rỡ lên bầu trời đêm!');
+  if (typeof socket !== 'undefined' && socket) {
     socket.emit('emote', 'firework');
   }
 }
+window.triggerFireworkCelebration = triggerFireworkCelebration;
 
 function toggleTimeOfDayTest() {
   initAudio();

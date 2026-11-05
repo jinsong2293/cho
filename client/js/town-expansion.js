@@ -1318,6 +1318,10 @@
     root.socket.emit("joinGoldenHour", {}, (res) => {
       if (!res || !res.ok) return;
       const gh = res.goldenHour || { x: 0, z: 0 };
+      if (res.money !== undefined && root.myPlayer) {
+        root.myPlayer.money = res.money;
+        if (typeof root.updateHUD === "function") root.updateHUD();
+      }
       if (typeof root.walkToFriend === "function") {
         root.walkToFriend(gh.x || 0, gh.z || 0, "Giờ Vàng Quảng Trường");
       }
@@ -1394,6 +1398,10 @@
         return;
       }
       if (input) input.value = "";
+      if (res && res.money !== undefined && root.myPlayer) {
+        root.myPlayer.money = res.money;
+        if (typeof root.updateHUD === "function") root.updateHUD();
+      }
       if (typeof root.showToast === "function") {
         root.showToast("🪷 Đèn Hoa Đăng mang điều ước của bạn đã được thả sáng lung linh (+250đ)!");
       }
@@ -1520,10 +1528,18 @@
         teleBtn.onclick = () => {
           isRidingGreenBus = false;
           if (root.myPlayer) {
+            const prevX = root.myPlayer.pos.x || 0;
+            const prevZ = root.myPlayer.pos.z || 0;
             root.myPlayer.pos.x = cx;
             root.myPlayer.pos.z = cz;
             if (root.myPlayer.mesh && root.myPlayer.mesh.group) {
               root.myPlayer.mesh.group.position.set(cx, 0, cz);
+            }
+            if (root.controls && root.camera) {
+              root.controls.target.set(cx, 1.1, cz);
+              root.camera.position.x += (cx - prevX);
+              root.camera.position.z += (cz - prevZ);
+              root.controls.update();
             }
             if (root.socket) {
               root.socket.emit("move", { pos: { x: cx, y: 0, z: cz }, rot: root.myPlayer.rot || 0, teleportAllowed: true });
