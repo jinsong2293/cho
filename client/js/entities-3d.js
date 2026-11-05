@@ -665,6 +665,58 @@ function buildShuttlecockCourt(x, z) {
   group.add(scGroup);
   shuttlecockMesh = scGroup;
 
+  // 7. Cổng Chào Khu Thể Thao & Hàng Rào Lưới Ngăn Cách Sân Đấu Riêng Biệt
+  const sportsGateGroup = new THREE.Group();
+  sportsGateGroup.position.set(-6.2, 0, 0);
+  [-2.2, 2.2].forEach((gz) => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 4.2, 10), poleMat);
+    post.position.set(0, 2.1, gz);
+    sportsGateGroup.add(post);
+
+    const postCap = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.45, 8), goldMat);
+    postCap.position.set(0, 4.4, gz);
+    sportsGateGroup.add(postCap);
+  });
+
+  const sportsBeam = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.35, 4.8), poleMat);
+  sportsBeam.position.set(0, 4.0, 0);
+  sportsGateGroup.add(sportsBeam);
+
+  const sportsSign = createTextSprite("🪶 CỔNG KHU THỂ THAO — SÂN ĐÁ CẦU KIỂNG 🪶", "#fef08a", "rgba(6, 78, 59, 0.98)");
+  sportsSign.position.set(0, 5.0, 0);
+  sportsSign.rotation.y = Math.PI / 2;
+  sportsSign.scale.set(6.4, 1.15, 1);
+  sportsGateGroup.add(sportsSign);
+  group.add(sportsGateGroup);
+
+  // Hàng rào lưới bảo vệ quanh sân đấu đá cầu (chừa cổng vào phía Tây)
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.65 });
+  const railBarMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4 });
+  for (let f = 0; f < 12; f++) {
+    const fa = (f / 12) * Math.PI * 2;
+    // Chừa khoảng trống ở góc Tây (-6.2m) làm cổng vào
+    if (Math.cos(fa) < -0.65) continue;
+    const fx = Math.cos(fa) * 7.5;
+    const fz = Math.sin(fa) * 7.5;
+
+    const fPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.5, 8), fenceMat);
+    fPost.position.set(fx, 0.75, fz);
+    group.add(fPost);
+
+    const fRail = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.08, 0.08), railBarMat);
+    fRail.position.set(fx * 0.93, 1.1, fz * 0.93);
+    fRail.rotation.y = fa + Math.PI / 2;
+    group.add(fRail);
+  }
+
+  // Lối đi lát đá thể thao kết nối ra đại lộ trung tâm
+  const sportsPathMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.7 });
+  for (let pStep = 0; pStep < 4; pStep++) {
+    const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.05, 2.4), sportsPathMat);
+    stepMesh.position.set(-6.6 - pStep * 0.95, 0.05, 0);
+    group.add(stepMesh);
+  }
+
   const sign = createTextSprite("🪶 TỔ HỢP SÂN VẬN ĐỘNG ĐÁ CẦU KIỂNG (Chạm / Phím K)", "#6ee7b7", "rgba(6, 78, 59, 0.95)");
   sign.position.set(0, 5.4, 0);
   sign.scale.set(7.4, 1.32, 1);

@@ -195,20 +195,143 @@ function initStalls() {
 }
 initStalls();
 
-// Danh sách NPC có lịch sống theo giờ & hướng dẫn mềm (Phase 10.2)
+// Danh sách NPC có lịch sống theo giờ & hướng dẫn mềm (Phase 10.2 & Cải tiến trật tự khu vực)
 const CUSTOMER_DEFS = [
-  { name: "Cô Ba Sài Gòn", type: "nonla", role: "shopper", homeZone: "central_market" },
-  { name: "Chị Tư Trà Đá", type: "nonla", role: "tea_host", homeZone: "tea_table_corner" },
-  { name: "Chú Bảy Miền Tây", type: "nonla", role: "fisher", homeZone: "floating_market_hill" },
-  { name: "Chị Ninja Lead", type: "helmet", role: "shopper", homeZone: "central_market" },
-  { name: "Anh Tây Ba Lô", type: "tourist", role: "explorer", homeZone: "night_food_stage" },
-  { name: "Bác Tổ Trưởng", type: "nonla", role: "guide", homeZone: "lotus_park_village" },
-  { name: "Bé Na Đá Cầu", type: "helmet", role: "kid", homeZone: "shuttlecock_court" },
-  { name: "Cô Năm Bánh Chưng", type: "nonla", role: "artisan", homeZone: "craft_village_garden" },
-  { name: "Anh Shipper Vui Tính", type: "helmet", role: "shopper", homeZone: "central_market" },
-  { name: "Ông Đồ Thầy Minh", type: "nonla", role: "elder", homeZone: "lotus_park_village" },
-  { name: "Chú Sáu Xích Lô", type: "nonla", role: "cyclo", homeZone: "central_market" },
-  { name: "Ca Sĩ Phố Đêm", type: "tourist", role: "singer", homeZone: "night_food_stage" },
+  {
+    name: "Cô Ba Sài Gòn",
+    type: "nonla",
+    role: "shopper",
+    homeZone: "central_market",
+    waypoints: [
+      { x: -11.0, z: -10.0, wait: 6000, dialog: "Trái cây Miền Tây hôm nay tươi rói, mọng nước quá!" },
+      { x: -10.5, z: 0.0, wait: 5000, dialog: "Ghé bách hóa mua ít đồ khô về nấu cơm trưa nào." },
+      { x: -11.0, z: 9.5, wait: 6000, dialog: "Mùi phở bò thơm nức cả góc phố Sài Gòn!" },
+      { x: -4.0, z: 0.0, wait: 5000, dialog: "Ngắm đài sen vàng buổi sáng thấy lòng nhẹ nhõm ghê." }
+    ]
+  },
+  {
+    name: "Chị Tư Trà Đá",
+    type: "nonla",
+    role: "tea_host",
+    homeZone: "tea_table_corner",
+    waypoints: [
+      { x: -1.5, z: 12.5, wait: 7000, dialog: "Trà đá đường hay nhân trần đây bà con ơi? Mời ngồi!" },
+      { x: 1.5, z: 12.5, wait: 6000, dialog: "Cắn hạt hướng dương, nhâm nhi cốc trà đá mát lạnh nhé!" },
+      { x: -5.5, z: 13.5, wait: 7000, dialog: "Nước mía siêu sạch vừa ép xong, ngọt lịm thơm mùi tắc!" },
+      { x: 5.5, z: 13.5, wait: 7000, dialog: "Tiếng đàn guitar acoustic nghe êm đềm quá!" }
+    ]
+  },
+  {
+    name: "Chú Bảy Miền Tây",
+    type: "nonla",
+    role: "fisher",
+    homeZone: "floating_market_hill",
+    waypoints: [
+      { x: -1.5, z: 33.0, wait: 8000, dialog: "Gió sông thổi mát rượi, cá cắn câu giật mỏi cả tay!" },
+      { x: 1.5, z: 35.0, wait: 7000, dialog: "Xuồng ba lá chở đầy dừa xiêm ngọt lịm cập bến rồi nghen!" },
+      { x: 0.0, z: 38.0, wait: 9000, dialog: "Bến sông Chợ Nổi nước trong xanh, chiều ngồi ngắm hoàng hôn hết ý!" }
+    ]
+  },
+  {
+    name: "Chị Ninja Lead",
+    type: "helmet",
+    role: "shopper",
+    homeZone: "central_market",
+    waypoints: [
+      { x: 11.0, z: -10.0, wait: 5000, dialog: "Chủ quán cho ly cà phê vợt nhiều sữa ít đá mang về nha!" },
+      { x: 10.5, z: 0.0, wait: 6000, dialog: "Trầm hương với ngọc phố cổ tiệm này tinh xảo quá." },
+      { x: 11.0, z: 9.5, wait: 6000, dialog: "Hoa xuân rực rỡ quá, mua chậu hoa về đón Tết thôi!" },
+      { x: 4.0, z: 0.0, wait: 5000, dialog: "Tấp xe vỉa hè mua nhanh lẹ rồi còn kịp về đón con!" }
+    ]
+  },
+  {
+    name: "Anh Tây Ba Lô",
+    type: "tourist",
+    role: "explorer",
+    homeZone: "night_food_stage",
+    waypoints: [
+      { x: -4.5, z: -41.0, wait: 7000, dialog: "Bánh tráng nướng and xiên que here taste incredible!" },
+      { x: 4.5, z: -41.0, wait: 7000, dialog: "I love Vietnamese nightlife! Everyone is so friendly!" },
+      { x: 0.0, z: -38.0, wait: 8000, dialog: "The night stage lights are so colorful and vibrant!" }
+    ]
+  },
+  {
+    name: "Bác Tổ Trưởng",
+    type: "nonla",
+    role: "guide",
+    homeZone: "lotus_park_village",
+    waypoints: [
+      { x: -34.0, z: -3.0, wait: 8000, dialog: "Bà con nhớ giữ gìn vệ sinh chung, cùng xây dựng thị trấn văn minh nha!" },
+      { x: -36.0, z: 3.0, wait: 7000, dialog: "Bảng tin cộng đồng có thông tin hoạt động mới, mời bà con ghé xem!" },
+      { x: -32.0, z: 0.0, wait: 8000, dialog: "Sân Làng chiều nay mát mẻ, chuẩn bị hội kéo co tưng bừng!" }
+    ]
+  },
+  {
+    name: "Bé Na Đá Cầu",
+    type: "helmet",
+    role: "kid",
+    homeZone: "shuttlecock_court",
+    waypoints: [
+      { x: 4.5, z: -13.5, wait: 6000, dialog: "Cú tâng cầu vừa rồi khéo quá! Ai vào so tài với cháu không?" },
+      { x: 11.5, z: -13.5, wait: 7000, dialog: "Đá cầu kiểng phải giữ thăng bằng chuẩn bài nha!" },
+      { x: 8.0, z: -11.0, wait: 8000, dialog: "Hoan hô! Lên khán đài cổ vũ cho các tuyển thủ nào!" }
+    ]
+  },
+  {
+    name: "Cô Năm Bánh Chưng",
+    type: "nonla",
+    role: "artisan",
+    homeZone: "craft_village_garden",
+    waypoints: [
+      { x: 36.0, z: -2.0, wait: 8000, dialog: "Nồi bánh chưng lá dong sôi sùng sục, thơm nức cả làng nghề!" },
+      { x: 39.0, z: 1.0, wait: 7000, dialog: "Gạo nếp cái hoa vàng với đỗ xanh loại một mới ngon chuẩn vị!" },
+      { x: 37.0, z: -5.0, wait: 8000, dialog: "Nghề làm bánh truyền thống giữ hồn Tết quê hương bà con ơi!" }
+    ]
+  },
+  {
+    name: "Anh Shipper Vui Tính",
+    type: "helmet",
+    role: "shopper",
+    homeZone: "central_market",
+    waypoints: [
+      { x: 0.0, z: -7.0, wait: 6000, dialog: "Đơn bánh mì nóng hổi, cà phê đá giao ngay trong một nốt nhạc!" },
+      { x: 0.0, z: 7.0, wait: 6000, dialog: "Thị trấn hôm nay rộn ràng khách, chạy đơn mệt mà vui ghê!" },
+      { x: -6.0, z: 0.0, wait: 5000, dialog: "Chào bà con! Ai cần gửi hàng liên phường ới em nhé!" }
+    ]
+  },
+  {
+    name: "Ông Đồ Thầy Minh",
+    type: "nonla",
+    role: "elder",
+    homeZone: "lotus_park_village",
+    waypoints: [
+      { x: -42.0, z: 6.0, wait: 9000, dialog: "Hồ sen thơm ngát, lòng người an yên... Nét chữ nết người." },
+      { x: -45.0, z: 9.0, wait: 8000, dialog: "Mỗi đóa hoa đăng là một lời nguyện ước bình an cho muôn nhà." },
+      { x: -40.0, z: 4.0, wait: 9000, dialog: "Trời chiều bảng lảng bóng hoàng hôn trên mặt nước hồ sen..." }
+    ]
+  },
+  {
+    name: "Chú Sáu Xích Lô",
+    type: "nonla",
+    role: "cyclo",
+    homeZone: "central_market",
+    waypoints: [
+      { x: -2.5, z: -6.0, wait: 7000, dialog: "Ai đi xích lô dạo mát ngắm phố chợ thị trấn không nào?" },
+      { x: 2.5, z: -6.0, wait: 7000, dialog: "Xích lô thong thả qua tháp đồng hồ Bến Thành, gió mát lộng!" },
+      { x: 0.0, z: -2.0, wait: 8000, dialog: "Bà con mỏi chân cứ lên xe chú Sáu chở dạo quanh một vòng!" }
+    ]
+  },
+  {
+    name: "Ca Sĩ Phố Đêm",
+    type: "tourist",
+    role: "singer",
+    homeZone: "night_food_stage",
+    waypoints: [
+      { x: 0.0, z: -45.0, wait: 9000, dialog: "Xin gửi tới quý bà con thị trấn giai điệu quê hương ngọt ngào!" },
+      { x: -2.0, z: -43.0, wait: 7000, dialog: "Cảm ơn những tràng pháo tay nồng nhiệt của bà con đêm nay!" },
+      { x: 2.0, z: -43.0, wait: 7000, dialog: "Âm nhạc kết nối mọi người! Cùng hát vang lên nào!" }
+    ]
+  },
 ];
 
 const CUSTOMER_DIALOGS = [
@@ -223,25 +346,27 @@ const CUSTOMER_DIALOGS = [
 ];
 
 function initCustomers() {
+  customers.length = 0;
   for (let i = 0; i < CUSTOMER_DEFS.length; i++) {
-    const angle = (i / CUSTOMER_DEFS.length) * Math.PI * 2;
-    const dist = 6 + Math.random() * 9;
     const def = CUSTOMER_DEFS[i];
+    const initialWp = def.waypoints[0];
     customers.push({
       id: `npc-${i + 1}`,
       name: def.name,
       npcType: def.type,
       role: def.role,
       homeZone: def.homeZone,
-      x: Number((Math.cos(angle) * dist).toFixed(2)),
-      z: Number((Math.sin(angle) * dist).toFixed(2)),
-      targetX: (Math.random() - 0.5) * 18,
-      targetZ: (Math.random() - 0.5) * 18,
+      waypoints: def.waypoints,
+      waypointIndex: 0,
+      x: initialWp.x,
+      z: initialWp.z,
+      targetX: initialWp.x,
+      targetZ: initialWp.z,
       targetStallId: null,
-      state: "wandering",
+      state: "idle",
       bubble: "",
       bubbleTimer: 0,
-      actionTimer: 1500 + Math.random() * 3000,
+      idleTimer: 2500 + Math.random() * 3500,
     });
   }
 }
@@ -658,9 +783,8 @@ function updateWorld(dt) {
     }
   }
 
-  // 3. Cập nhật NPC có lịch sống theo giờ & tự tăng hoạt động khi phòng vắng (Phase 10.2)
-  const onlineCount = Object.keys(players).length;
-  const speedBoost = currentMarketEvent.id === "tourists_visit" ? 1.4 : 1.0;
+  // 3. Cập nhật NPC có trật tự theo khu vực & lịch trình sống văn minh
+  const speedBoost = currentMarketEvent.id === "tourists_visit" ? 1.25 : 1.0;
 
   customers.forEach((c) => {
     if (c.bubbleTimer > 0) {
@@ -668,54 +792,51 @@ function updateWorld(dt) {
       if (c.bubbleTimer <= 0) c.bubble = "";
     }
 
-    c.actionTimer -= dt;
-    if (c.actionTimer <= 0) {
-      c.actionTimer = 2500 + Math.random() * 4000;
+    if (c.state === "idle") {
+      c.idleTimer -= dt;
+      if (c.idleTimer <= 0) {
+        c.waypointIndex = (c.waypointIndex + 1) % c.waypoints.length;
+        const nextWp = c.waypoints[c.waypointIndex];
+        c.targetX = nextWp.x;
+        c.targetZ = nextWp.z;
+        c.state = "walking";
 
-      // Khi phòng vắng (< 5 người), NPC tích cực mời gọi giao lưu & di chuyển tới khu nóng
-      if (onlineCount < 5 && Math.random() < 0.35) {
-        const hotZoneId = HOTSPOT_SCHEDULE[currentHotspotPhase]?.zoneId || c.homeZone;
-        const zDef = ZONES.find((z) => z.id === hotZoneId) || ZONES[ZONES.length - 1];
-        c.targetStallId = null;
-        c.targetX = zDef.center.x + (Math.random() - 0.5) * 10;
-        c.targetZ = zDef.center.z + (Math.random() - 0.5) * 10;
-        c.state = "wandering";
-        if (!c.bubble && Math.random() < 0.5) {
-          c.bubble = CUSTOMER_DIALOGS[Math.floor(Math.random() * CUSTOMER_DIALOGS.length)];
-          c.bubbleTimer = 4500;
-        }
-      } else {
-        const activeStalls = Object.values(stalls).filter((s) =>
-          Object.values(s.goods).some((qty) => qty > 0)
-        );
-
-        if (activeStalls.length > 0 && Math.random() < 0.75) {
-          const chosen = activeStalls[Math.floor(Math.random() * activeStalls.length)];
-          c.targetStallId = chosen.id;
-          c.targetX = chosen.position.x + (Math.random() - 0.5) * 2.2;
-          c.targetZ = chosen.position.z + 2.2;
-          c.state = "shopping";
-        } else {
-          c.targetStallId = null;
-          c.targetX = (Math.random() - 0.5) * 26;
-          c.targetZ = (Math.random() - 0.5) * 26;
-          c.state = "wandering";
+        // Khách mua sắm tại chợ trung tâm sẽ kiểm tra sạp hàng gần đó để mua hàng
+        if (c.role === "shopper") {
+          const nearStall = Object.values(stalls).find((s) =>
+            Math.hypot(s.position.x - nextWp.x, s.position.z - nextWp.z) < 3.2 &&
+            Object.values(s.goods).some((qty) => qty > 0)
+          );
+          if (nearStall && Math.random() < 0.8) {
+            c.targetStallId = nearStall.id;
+            c.state = "shopping";
+          }
         }
       }
-    }
-
-    const dx = c.targetX - c.x;
-    const dz = c.targetZ - c.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist > 0.2) {
-      const speed = 2.4 * speedBoost * (dt / 1000);
-      c.x = Number((c.x + (dx / dist) * Math.min(speed, dist)).toFixed(2));
-      c.z = Number((c.z + (dz / dist) * Math.min(speed, dist)).toFixed(2));
-    } else if (c.state === "shopping" && c.targetStallId) {
-      handleCustomerPurchase(c, c.targetStallId);
-      c.state = "wandering";
-      c.targetStallId = null;
-      c.actionTimer = 3000 + Math.random() * 3500;
+    } else if (c.state === "walking" || c.state === "shopping") {
+      const dx = c.targetX - c.x;
+      const dz = c.targetZ - c.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > 0.15) {
+        // Tốc độ đi bộ tự nhiên, thư thả (~1.3 m/s) không còn chạy tán loạn
+        const speed = 1.35 * speedBoost * (dt / 1000);
+        c.x = Number((c.x + (dx / dist) * Math.min(speed, dist)).toFixed(2));
+        c.z = Number((c.z + (dz / dist) * Math.min(speed, dist)).toFixed(2));
+      } else {
+        c.x = c.targetX;
+        c.z = c.targetZ;
+        if (c.state === "shopping" && c.targetStallId) {
+          handleCustomerPurchase(c, c.targetStallId);
+          c.targetStallId = null;
+        }
+        c.state = "idle";
+        const curWp = c.waypoints[c.waypointIndex];
+        c.idleTimer = curWp.wait || (5000 + Math.random() * 4000);
+        if (!c.bubble && Math.random() < 0.8) {
+          c.bubble = curWp.dialog || CUSTOMER_DIALOGS[Math.floor(Math.random() * CUSTOMER_DIALOGS.length)];
+          c.bubbleTimer = 4500;
+        }
+      }
     }
   });
 

@@ -358,6 +358,7 @@ function setWeatherMode(mode) {
   if (idx !== -1) weatherOverrideIndex = idx;
   applyWeatherVisuals();
 }
+window.setWeatherMode = setWeatherMode;
 
 function cycleWeatherMode() {
   initAudio();
@@ -410,6 +411,7 @@ function applyWeatherVisuals(overrideMode) {
     plazaMesh.material.metalness = wState.metalness;
   }
 }
+window.applyWeatherVisuals = applyWeatherVisuals;
 
 function updateWeatherParticles3D(dt, elapsedSec) {
   if (activeWeather === 'rain' && rainSystem) {
@@ -797,6 +799,8 @@ function buildVietnameseMarketTown() {
   buildBenThanhClockTower(0, -34);
   buildWelcomeGate(0, 26);
   buildGoldenLotusFountain();
+  buildCentralTownBoulevard();
+  buildTownDirectionalSignpost(0, -6);
   buildBauCuaBooth(-8, -16);
   buildSidewalkTeaTable(0, 13.5);
   buildRiversidePier(0, 32);
@@ -857,6 +861,91 @@ function buildVietnameseMarketTown() {
   if (typeof buildOuterZones3D === 'function') {
     buildOuterZones3D();
   }
+}
+
+function buildCentralTownBoulevard() {
+  const blvdGroup = new THREE.Group();
+
+  // Mặt đá hoa cương đại lộ trung tâm (rộng 5.6m, dài 58m từ z = -32 đến z = +26)
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: 0xe2e8f0,
+    roughness: 0.65,
+    metalness: 0.1,
+  });
+  const blvdFloor = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 58), stoneMat);
+  blvdFloor.rotation.x = -Math.PI / 2;
+  blvdFloor.position.set(0, 0.028, -3.0);
+  blvdFloor.receiveShadow = true;
+  blvdGroup.add(blvdFloor);
+
+  // Viền đá hoa cương hai bên trục đại lộ
+  const edgeMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 });
+  [-2.8, 2.8].forEach((bx) => {
+    const curb = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.1, 58), edgeMat);
+    curb.position.set(bx, 0.05, -3.0);
+    blvdGroup.add(curb);
+  });
+
+  // Hàng chậu cây cau kiểng phân cách hành lang đi bộ
+  [-2.95, 2.95].forEach((px) => {
+    [-24, -16, -8, 8, 16, 22].forEach((pz) => {
+      const pot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28, 0.22, 0.5, 8),
+        new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.7 })
+      );
+      pot.position.set(px, 0.25, pz);
+      blvdGroup.add(pot);
+
+      const tree = new THREE.Mesh(
+        new THREE.ConeGeometry(0.42, 1.35, 7),
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 })
+      );
+      tree.position.set(px, 1.15, pz);
+      blvdGroup.add(tree);
+    });
+  });
+
+  scene.add(blvdGroup);
+}
+
+function buildTownDirectionalSignpost(x, z) {
+  const postGroup = new THREE.Group();
+  postGroup.position.set(x, 0, z);
+
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 });
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 4.2, 10), postMat);
+  post.position.y = 2.1;
+  postGroup.add(post);
+
+  const finial = new THREE.Mesh(
+    new THREE.ConeGeometry(0.28, 0.45, 8),
+    new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.7 })
+  );
+  finial.position.y = 4.4;
+  postGroup.add(finial);
+
+  // Biển chỉ hướng 4 phương
+  const signW = createTextSprite("⬅️ KHU BẦU CUA & HỒ SEN", "#fef08a", "rgba(185, 28, 28, 0.95)");
+  signW.position.set(-1.4, 3.8, 0);
+  signW.scale.set(3.2, 0.62, 1);
+  postGroup.add(signW);
+
+  const signE = createTextSprite("KHU ĐÁ CẦU & LÀNG NGHỀ ➡️", "#6ee7b7", "rgba(6, 78, 59, 0.95)");
+  signE.position.set(1.4, 3.2, 0);
+  signE.scale.set(3.2, 0.62, 1);
+  postGroup.add(signE);
+
+  const signN = createTextSprite("⬆️ CHỢ BẾN THÀNH & PHỐ ĐÊM", "#fde047", "rgba(15, 23, 42, 0.95)");
+  signN.position.set(0, 2.6, -1.2);
+  signN.scale.set(3.4, 0.62, 1);
+  postGroup.add(signN);
+
+  const signS = createTextSprite("⬇️ PHỐ TRÀ ĐÁ & BẾN SÔNG", "#bae6fd", "rgba(3, 105, 161, 0.95)");
+  signS.position.set(0, 2.0, 1.2);
+  signS.scale.set(3.2, 0.62, 1);
+  postGroup.add(signS);
+
+  scene.add(postGroup);
 }
 
 function buildBenThanhClockTower(x, z) {
@@ -1156,7 +1245,7 @@ function buildBauCuaBooth(x, z) {
     bauCuaDiceMeshes.push(dMesh);
   });
 
-  // 6. 6 Đại Tượng Linh Vật 3D (Nai, Bầu, Gà, Cá, Cua, Tôm) tại bán kính 7.4m quanh Đại Lầu Hội
+  // 6. 6 Đại Tượng Linh Vật 3D (Nai, Bầu, Gà, Cá, Cua, Tôm) tại bán kính 5.6m gọn gàng trong khuôn viên
   const mascotConfigs = [
     { angle: -Math.PI * 0.78, color: 0xd97706, label: "🦌 NAI LỘC", geo: 'cone' },
     { angle: -Math.PI * 0.5,  color: 0x10b981, label: "🎃 BẦU TIÊN", geo: 'gourd' },
@@ -1166,10 +1255,10 @@ function buildBauCuaBooth(x, z) {
     { angle:  Math.PI * 0.5,  color: 0xf97316, label: "🦐 TÔM RỒNG", geo: 'cylinder' },
   ];
   mascotConfigs.forEach((mc) => {
-    const mx = Math.cos(mc.angle) * 7.4;
-    const mz = Math.sin(mc.angle) * 7.4;
-    const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.68, 1.15, 12), darkWoodMat);
-    ped.position.set(mx, 0.58, mz);
+    const mx = Math.cos(mc.angle) * 5.6;
+    const mz = Math.sin(mc.angle) * 5.6;
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.58, 1.0, 12), darkWoodMat);
+    ped.position.set(mx, 0.5, mz);
     bauCuaBoothGroup.add(ped);
 
     const totemMat = new THREE.MeshStandardMaterial({
@@ -1182,48 +1271,99 @@ function buildBauCuaBooth(x, z) {
     let mascotMesh;
     if (mc.geo === 'gourd') {
       mascotMesh = new THREE.Group();
-      const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), totemMat);
-      const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), totemMat);
-      b2.position.y = 0.5;
+      const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), totemMat);
+      const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), totemMat);
+      b2.position.y = 0.45;
       mascotMesh.add(b1, b2);
     } else if (mc.geo === 'torus') {
-      mascotMesh = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.16, 10, 16), totemMat);
+      mascotMesh = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.15, 10, 16), totemMat);
     } else if (mc.geo === 'octa') {
-      mascotMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.52, 1), totemMat);
+      mascotMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.48, 1), totemMat);
     } else {
-      mascotMesh = new THREE.Mesh(new THREE.SphereGeometry(0.48, 12, 12), totemMat);
+      mascotMesh = new THREE.Mesh(new THREE.SphereGeometry(0.44, 12, 12), totemMat);
     }
-    mascotMesh.position.set(mx, 1.65, mz);
+    mascotMesh.position.set(mx, 1.45, mz);
     bauCuaBoothGroup.add(mascotMesh);
 
     const tag = createTextSprite(mc.label, "#fef08a", "rgba(127, 29, 29, 0.94)");
-    tag.position.set(mx, 2.55, mz);
-    tag.scale.set(2.5, 0.62, 1);
+    tag.position.set(mx, 2.25, mz);
+    tag.scale.set(2.3, 0.58, 1);
     bauCuaBoothGroup.add(tag);
   });
 
-  // 7. Cặp Trống Hội Khai Xuân ở lối vào phía Nam (-3.8, 3.4) và (3.8, 3.4)
-  [-3.8, 3.8].forEach((dx) => {
+  // 7. Cặp Trống Hội Khai Xuân ở lối vào phía Nam (-2.8, 3.4) và (2.8, 3.4)
+  [-2.8, 2.8].forEach((dx) => {
     const drumGroup = new THREE.Group();
     drumGroup.position.set(dx, 0, 3.4);
-    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.8, 0.95), darkWoodMat);
-    stand.position.y = 0.4;
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.75, 0.85), darkWoodMat);
+    stand.position.y = 0.38;
     drumGroup.add(stand);
 
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 1.05, 16), redLacquerMat);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.95, 16), redLacquerMat);
     barrel.rotation.x = Math.PI / 2;
-    barrel.position.y = 1.15;
+    barrel.position.y = 1.05;
     drumGroup.add(barrel);
 
     const drumHead = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.58, 0.58, 1.1, 16),
+      new THREE.CylinderGeometry(0.52, 0.52, 1.0, 16),
       new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.6 })
     );
     drumHead.rotation.x = Math.PI / 2;
-    drumHead.position.y = 1.15;
+    drumHead.position.y = 1.05;
     drumGroup.add(drumHead);
     bauCuaBoothGroup.add(drumGroup);
   });
+
+  // 8. Cổng Chào Lễ Hội Dân Gian & Hàng Rào Lan Can Gỗ Thếp Vàng Ngăn Cách Riêng Biệt
+  const gateGroup = new THREE.Group();
+  gateGroup.position.set(0, 0, 5.8);
+  [-2.2, 2.2].forEach((gx) => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 4.2, 12), redLacquerMat);
+    post.position.set(gx, 2.1, 0);
+    gateGroup.add(post);
+
+    const postCap = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.45, 8), goldMat);
+    postCap.position.set(gx, 4.4, 0);
+    gateGroup.add(postCap);
+  });
+
+  const gateBeam = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.35, 0.35), darkWoodMat);
+  gateBeam.position.set(0, 3.9, 0);
+  gateGroup.add(gateBeam);
+
+  const gateRoof = new THREE.Mesh(new THREE.ConeGeometry(3.6, 0.9, 4), redLacquerMat);
+  gateRoof.rotation.y = Math.PI / 4;
+  gateRoof.position.set(0, 4.65, 0);
+  gateGroup.add(gateRoof);
+
+  const gateSign = createTextSprite("🏮 CỔNG KHU TRÒ CHƠI DÂN GIAN — SỚI BẦU CUA 🏮", "#fef08a", "rgba(185, 28, 28, 0.98)");
+  gateSign.position.set(0, 5.5, 0);
+  gateSign.scale.set(6.4, 1.15, 1);
+  gateGroup.add(gateSign);
+  bauCuaBoothGroup.add(gateGroup);
+
+  // Lan can hàng rào gỗ trang trí bao quanh khu vực sới hội
+  for (let f = 1; f < 8; f++) {
+    const fa = (f / 8) * Math.PI * 2 + Math.PI / 8;
+    const fx = Math.cos(fa) * 5.8;
+    const fz = Math.sin(fa) * 5.8;
+    const fencePost = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.3, 8), darkWoodMat);
+    fencePost.position.set(fx, 0.65, fz);
+    bauCuaBoothGroup.add(fencePost);
+
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.1, 0.1), goldMat);
+    rail.position.set(fx * 0.94, 0.82, fz * 0.94);
+    rail.rotation.y = fa + Math.PI / 2;
+    bauCuaBoothGroup.add(rail);
+  }
+
+  // Lối đi lát gạch đỏ hoa văn kết nối ra đại lộ trung tâm
+  const pathMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7 });
+  for (let pStep = 0; pStep < 4; pStep++) {
+    const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.05, 0.85), pathMat);
+    stepMesh.position.set(0, 0.05, 6.2 + pStep * 0.95);
+    bauCuaBoothGroup.add(stepMesh);
+  }
 
   const sign = createTextSprite("🎲 ĐẠI LẦU HỘI BẦU CUA TÔM CÁ DÂN GIAN 🎲", "#fef08a", "rgba(185, 28, 28, 0.96)");
   sign.position.set(0, 5.4, 0);
@@ -1273,6 +1413,7 @@ function buildSidewalkTeaTable(x, z) {
 
   // 2. 8 Cụm Bàn Trà Đá + Ô Dù + Bình Thủy + Ấm Chén + 34 Ghế Nhựa Song Long
   teaStoolMeshes = [];
+  const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.72 });
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6 });
   const legMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.5 });
   const thermosMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
@@ -1468,6 +1609,51 @@ function buildSidewalkTeaTable(x, z) {
   stageSign.scale.set(4.5, 0.9, 1);
   stageGroup.add(stageSign);
   teaTableGroup.add(stageGroup);
+
+  // 9. Cổng Chào Phố Trà Đá & Bồn Hoa Gạch Viền Phân Cách Khu Vực Riêng Biệt
+  const teaGateGroup = new THREE.Group();
+  teaGateGroup.position.set(0, 0, -6.2);
+  [-3.2, 3.2].forEach((gx) => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 4.0, 10), darkWoodMat);
+    post.position.set(gx, 2.0, 0);
+    teaGateGroup.add(post);
+
+    const postLantern = new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xb45309, emissiveIntensity: 0.85 })
+    );
+    postLantern.position.set(gx, 4.2, 0);
+    teaGateGroup.add(postLantern);
+  });
+
+  const teaGateBeam = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.28, 0.28), darkWoodMat);
+  teaGateBeam.position.set(0, 3.8, 0);
+  teaGateGroup.add(teaGateBeam);
+
+  const teaGateSign = createTextSprite("☕ CỔNG PHỐ VĂN HÓA TRÀ ĐÁ VỈA HÈ & ACOUSTIC ☕", "#fef08a", "rgba(180, 83, 9, 0.98)");
+  teaGateSign.position.set(0, 4.7, 0);
+  teaGateSign.scale.set(6.8, 1.15, 1);
+  teaGateGroup.add(teaGateSign);
+  teaTableGroup.add(teaGateGroup);
+
+  // Bồn hoa gạch viền trang trí quanh sân gạch trà đá
+  const planterMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.75 });
+  const bushMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
+  [
+    { x: -10.5, z: 0, w: 0.8, d: 12.5 },
+    { x: 10.5, z: 0, w: 0.8, d: 12.5 },
+    { x: -5.5, z: -6.0, w: 9.0, d: 0.8 },
+    { x: 5.5, z: -6.0, w: 9.0, d: 0.8 },
+    { x: 0, z: 7.0, w: 20.0, d: 0.8 },
+  ].forEach((pb) => {
+    const box = new THREE.Mesh(new THREE.BoxGeometry(pb.w, 0.35, pb.d), planterMat);
+    box.position.set(pb.x, 0.18, pb.z);
+    teaTableGroup.add(box);
+
+    const plant = new THREE.Mesh(new THREE.BoxGeometry(pb.w * 0.92, 0.45, pb.d * 0.92), bushMat);
+    plant.position.set(pb.x, 0.45, pb.z);
+    teaTableGroup.add(plant);
+  });
 
   const sign = createTextSprite("☕ ĐẠI QUẢNG TRƯỜNG TRÀ ĐÁ & PHỐ ĐI BỘ ACOUSTIC ☕", "#fef08a", "rgba(185, 28, 28, 0.95)");
   sign.position.set(0, 5.2, 0);

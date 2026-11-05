@@ -299,7 +299,7 @@ h3,
 /* ==================== 3. LOA PHƯỜNG EVENT BANNER & ACHIEVEMENT TOAST ==================== */
 #event-toast-slot {
   position: fixed;
-  top: 44px;
+  top: 52px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 120;

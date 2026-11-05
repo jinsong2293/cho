@@ -22,10 +22,10 @@
   const ZONES = [
     {
       id: "tea_table_corner",
-      name: { vi: "Đại Quảng Trường Trà Đá & Acoustic Vỉa Hè", en: "Grand Sidewalk Tea & Acoustic Plaza" },
+      name: { vi: "Khu Phố Văn Hóa Trà Đá & Acoustic Vỉa Hè", en: "Sidewalk Tea & Acoustic Cultural Zone" },
       icon: "☕",
       center: { x: 0, z: 13.5 },
-      radius: 18.0,
+      radius: 11.5,
       priority: 12,
       type: "social",
       capacity: 30,
@@ -36,10 +36,10 @@
     },
     {
       id: "shuttlecock_court",
-      name: { vi: "Đại Đấu Trường Đá Cầu Kiểng Liên Phường", en: "Grand Shuttlecock Stadium Complex" },
+      name: { vi: "Khu Thể Thao & Đấu Trường Đá Cầu Kiểng", en: "Sports Complex & Shuttlecock Stadium" },
       icon: "🪶",
       center: { x: 8, z: -15 },
-      radius: 19.0,
+      radius: 11.0,
       priority: 12,
       type: "park",
       capacity: 30,
@@ -50,10 +50,10 @@
     },
     {
       id: "bau_cua_booth",
-      name: { vi: "Đại Lầu Hội Bầu Cua Tôm Cá Dân Gian", en: "Imperial Folk Dice Palace" },
+      name: { vi: "Khu Trò Chơi Dân Gian & Lầu Hội Bầu Cua", en: "Folk Gaming Pavilion & Imperial Bầu Cua" },
       icon: "🎲",
       center: { x: -8, z: -16 },
-      radius: 19.0,
+      radius: 11.0,
       priority: 12,
       type: "market",
       capacity: 30,
