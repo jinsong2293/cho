@@ -678,7 +678,25 @@ h3,
   display: none !important;
 }
 
-/* ==================== 6. BOTTOM CONTROL DOCK (SINGLE COMPACT BAR) ==================== */
+.scratch-box {
+  width: 76px;
+  height: 76px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed #fbbf24;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+.scratch-box.revealed {
+  border-style: solid;
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+  transform: scale(1.05);
+}
 #bottom-dock-wrapper {
   position: fixed;
   bottom: 6px;

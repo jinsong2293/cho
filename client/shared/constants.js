@@ -131,6 +131,34 @@ const HOUSING_CONFIG = {
   ]
 };
 
+// Cấu hình dịch vụ Nhà Phố & Thương Mại Thị Trấn
+const LOTTERY_CONFIG = {
+  ticketPrice: 1000,
+  scratchPrice: 2000,
+  jackpotPrize: 100000,
+  scratchPrizes: [
+    { match: 3, symbol: "lotus", name: "3 Hoa Sen Vàng", prize: 50000, icon: "🪷" },
+    { match: 3, symbol: "gold", name: "3 Thỏi Vàng", prize: 20000, icon: "💰" },
+    { match: 3, symbol: "crab", name: "3 Con Cua", prize: 8000, icon: "🦀" },
+    { match: 2, symbol: "any", name: "2 Biểu Tượng Giống Nhau", prize: 3000, icon: "✨" },
+    { match: 1, symbol: "any", name: "Lộc May Mắn", prize: 1000, icon: "🧧" },
+  ],
+};
+
+const BANK_CONFIG = {
+  interestRate: 0.05, // Lãi suất 5% mỗi ngày game
+  minDeposit: 1000,
+};
+
+const GARAGE_CONFIG = {
+  bikeUpgradeCost: 8000,
+  upgradedSpeed: 25.0,
+  standardSpeed: 18.5,
+  drinkCost: 500,
+  drinkSpeedMultiplier: 1.4,
+  drinkDuration: 180,
+};
+
 // Vận tốc di chuyển
 const MOVE_SPEED = 6.0;
 
@@ -144,6 +172,9 @@ if (typeof module !== "undefined" && module.exports) {
     GACHA_COST,
     QUESTS_CONFIG,
     HOUSING_CONFIG,
+    LOTTERY_CONFIG,
+    BANK_CONFIG,
+    GARAGE_CONFIG,
     DAY_LENGTH,
     TICK_RATE,
     MAX_PLAYERS,
@@ -164,6 +195,9 @@ if (typeof window !== "undefined") {
     GACHA_COST,
     QUESTS_CONFIG,
     HOUSING_CONFIG,
+    LOTTERY_CONFIG,
+    BANK_CONFIG,
+    GARAGE_CONFIG,
     DAY_LENGTH,
     TICK_RATE,
     MAX_PLAYERS,
@@ -173,4 +207,7 @@ if (typeof window !== "undefined") {
     MOVE_SPEED,
   };
   window.HOUSING_CONFIG = HOUSING_CONFIG;
+  window.LOTTERY_CONFIG = LOTTERY_CONFIG;
+  window.BANK_CONFIG = BANK_CONFIG;
+  window.GARAGE_CONFIG = GARAGE_CONFIG;
 }

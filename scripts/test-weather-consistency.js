@@ -66,7 +66,8 @@ async function runWeatherTest() {
 
   try {
     const page = await browser.newPage({ viewport: { width: 1080, height: 540 } });
-    await page.goto("http://127.0.0.1:3000/", { waitUntil: "networkidle", timeout: 12000 });
+    const TEST_PORT = process.env.TEST_PORT || process.env.PORT || 34567;
+    await page.goto(`http://127.0.0.1:${TEST_PORT}/`, { waitUntil: "networkidle", timeout: 12000 });
 
     const joinBtn = await page.$("#join-screen .join-btn");
     if (joinBtn) {

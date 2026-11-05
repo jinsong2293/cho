@@ -372,7 +372,16 @@ function gameLoop() {
     const isMoving = _moveDir.lengthSq() > 0.001;
     if (isMoving) {
       _moveDir.normalize();
-      const moveSpeed = (myPlayer.hoverboard ? 18.5 : 7.5) * speedFactor;
+      let baseSpeed = 7.5;
+      if (myPlayer.motorbikeUpgrade && myPlayer.motorbikeUpgrade.speed) {
+        baseSpeed = 25.0;
+      } else if (myPlayer.hoverboard) {
+        baseSpeed = 18.5;
+      }
+      if (myPlayer.energyDrinkUntil && myPlayer.energyDrinkUntil > Date.now()) {
+        baseSpeed *= 1.4;
+      }
+      const moveSpeed = baseSpeed * speedFactor;
       const deltaX = _moveDir.x * moveSpeed * dt;
       const deltaZ = _moveDir.z * moveSpeed * dt;
 

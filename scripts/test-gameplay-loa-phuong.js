@@ -50,7 +50,8 @@ async function runGameplayTest() {
     }
   });
 
-  await page.goto('http://127.0.0.1:3000/', { waitUntil: 'networkidle', timeout: 15000 });
+  const TEST_PORT = process.env.TEST_PORT || process.env.PORT || 34567;
+  await page.goto(`http://127.0.0.1:${TEST_PORT}/`, { waitUntil: 'networkidle', timeout: 15000 });
 
   // Nhập tên và vào thị trấn
   const nameInput = await page.$('#nickname-input');
@@ -195,7 +196,7 @@ async function runGameplayTest() {
     deviceScaleFactor: 2
   });
   const pageMobile = await contextMobile.newPage();
-  await pageMobile.goto('http://127.0.0.1:3000/', { waitUntil: 'networkidle', timeout: 15000 });
+  await pageMobile.goto(`http://127.0.0.1:${TEST_PORT}/`, { waitUntil: 'networkidle', timeout: 15000 });
 
   const mobileJoinBtn = await pageMobile.$('#join-screen .join-btn');
   if (mobileJoinBtn) {

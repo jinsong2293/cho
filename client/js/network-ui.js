@@ -905,33 +905,73 @@ function interactNearest() {
     return;
   }
 
-  if (Math.hypot(myPlayer.pos.x - 0, myPlayer.pos.z - 32) < 11.0) {
-    openFishingModal();
+  // 1. Phố Dịch Vụ & Thương Mại Đông (x = 26)
+  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - (-9)) < 6.5) {
+    openBankModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - 0) < 6.5) {
+    openLotteryModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - 9.5) < 6.5) {
+    openGarageModal();
     return;
   }
 
-  if (Math.hypot(myPlayer.pos.x - 0, myPlayer.pos.z - 13.5) < 11.5) {
-    openTeaTableModal();
+  // 2. Khu Bất Động Sản Nhà Ở Của Bạn (48, 22)
+  if (Math.hypot(myPlayer.pos.x - 48, myPlayer.pos.z - 22) < 9.5) {
+    openHouseModal();
     return;
   }
 
-  if (Math.hypot(myPlayer.pos.x - (-8), myPlayer.pos.z - (-16)) < 11.5) {
-    openBauCuaModal();
-    return;
-  }
-
-  if (Math.hypot(myPlayer.pos.x - 8, myPlayer.pos.z - (-15)) < 11.5) {
-    kickShuttlecockNow();
-    return;
-  }
-
+  // 3. Phố Cổ Văn Hóa & Nhà May Áo Dài Tây (x ≈ -26 / -38)
   if (Math.hypot(myPlayer.pos.x - (-26), myPlayer.pos.z - 0) < 9.5) {
     openCommunityEventsModal();
     return;
   }
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - 0) < 7.5) {
+    openCustomizationModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - (-18)) < 7.5) {
+    openBankModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - (-38), myPlayer.pos.z - 18) < 7.5) {
+    openGarageModal();
+    return;
+  }
 
-  if (Math.hypot(myPlayer.pos.x - 26, myPlayer.pos.z - 0) < 9.5) {
+  // 4. Dãy Nhà Phố Đông (x ≈ 38)
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - (-18)) < 7.5) {
+    openTeaTableModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - 0) < 7.5) {
     openHouseModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 38, myPlayer.pos.z - 18) < 7.5) {
+    openWholesaleModal();
+    return;
+  }
+
+  // 5. Giải trí & Minigame
+  if (Math.hypot(myPlayer.pos.x - (-48), myPlayer.pos.z - (-16)) < 11.5) {
+    openBauCuaModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 48, myPlayer.pos.z - (-16)) < 11.5) {
+    kickShuttlecockNow();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - (-8), myPlayer.pos.z - 27) < 11.5) {
+    openTeaTableModal();
+    return;
+  }
+  if (Math.hypot(myPlayer.pos.x - 0, myPlayer.pos.z - 32) < 11.0) {
+    openFishingModal();
     return;
   }
 
@@ -2310,6 +2350,414 @@ function walkToFriend(x, z, nick) {
   closeModal('modal-friends');
   showToast(`🏃 Đang chạy tới hội ngộ cùng ${nick}!`);
 }
+
+/* ==================== 15. NGÂN HÀNG, ĐẠI LÝ VÉ SỐ & TIỆM ĐỘ XE ==================== */
+let currentBankSavings = 0;
+
+function openBankModal() {
+  initAudio();
+  const walletEl = document.getElementById('bank-wallet-val');
+  const savingsEl = document.getElementById('bank-savings-val');
+  const noticeEl = document.getElementById('bank-interest-notice');
+  const inputEl = document.getElementById('bank-amount-input');
+  if (inputEl) inputEl.value = '';
+
+  if (walletEl) walletEl.innerText = `${(myPlayer.money || 0).toLocaleString()}đ`;
+
+  if (socket && socket.connected) {
+    socket.emit('getBankInfo', {}, (res) => {
+      if (!res || !res.ok) return;
+      const money = res.walletMoney !== undefined ? res.walletMoney : res.money;
+      if (money !== undefined) {
+        myPlayer.money = money;
+        updateHUD();
+      }
+      if (res.bankSavings !== undefined) {
+        currentBankSavings = res.bankSavings;
+      } else if (res.bank) {
+        myPlayer.bank = res.bank;
+        currentBankSavings = res.bank.savings || 0;
+      }
+      if (walletEl) walletEl.innerText = `${(myPlayer.money || 0).toLocaleString()}đ`;
+      if (savingsEl) savingsEl.innerText = `${currentBankSavings.toLocaleString()}đ`;
+      if (noticeEl) {
+        const intEarned = res.interestGained || res.interestEarned;
+        if (intEarned && intEarned > 0) {
+          noticeEl.style.display = 'block';
+          noticeEl.innerText = `🎉 Két tiền của bạn vừa sinh lời: +${intEarned.toLocaleString()}đ tiền lãi ngày mới!`;
+        } else {
+          noticeEl.style.display = 'none';
+        }
+      }
+    });
+  } else {
+    currentBankSavings = (myPlayer.bank && myPlayer.bank.savings) || 0;
+    if (savingsEl) savingsEl.innerText = `${currentBankSavings.toLocaleString()}đ`;
+    if (noticeEl) noticeEl.style.display = 'none';
+  }
+
+  openModal('modal-bank');
+}
+
+function setBankAmount(type) {
+  const inputEl = document.getElementById('bank-amount-input');
+  if (!inputEl) return;
+  if (type === 'all_wallet') {
+    inputEl.value = myPlayer.money || 0;
+  } else if (type === 'all_savings') {
+    inputEl.value = currentBankSavings || (myPlayer.bank && myPlayer.bank.savings) || 0;
+  }
+}
+
+function depositBankNow() {
+  initAudio();
+  const inputEl = document.getElementById('bank-amount-input');
+  const amt = parseInt(inputEl ? inputEl.value : 0, 10);
+  if (isNaN(amt) || amt <= 0) {
+    showToast('Vui lòng nhập số tiền hợp lệ cần gửi tiết kiệm!');
+    return;
+  }
+  if ((myPlayer.money || 0) < amt) {
+    showToast('Số dư ví không đủ để gửi số tiền này!');
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('depositBank', { amount: amt }, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Lỗi gửi tiền vào két!');
+        return;
+      }
+      const money = res.walletMoney !== undefined ? res.walletMoney : res.money;
+      if (money !== undefined) myPlayer.money = money;
+      if (res.bankSavings !== undefined) {
+        currentBankSavings = res.bankSavings;
+      } else if (res.bank) {
+        myPlayer.bank = res.bank;
+        currentBankSavings = res.bank.savings || 0;
+      }
+      updateHUD();
+      playSound('buy');
+      showToast(`💰 Đã gửi ${amt.toLocaleString()}đ vào két an toàn (Lãi 5%/ngày)!`);
+      openBankModal();
+    });
+  } else {
+    myPlayer.money -= amt;
+    if (!myPlayer.bank) myPlayer.bank = { savings: 0, lastInterestDay: 1 };
+    myPlayer.bank.savings += amt;
+    currentBankSavings = myPlayer.bank.savings;
+    updateHUD();
+    playSound('buy');
+    showToast(`💰 Đã gửi ${amt.toLocaleString()}đ vào két an toàn!`);
+    openBankModal();
+  }
+}
+
+function withdrawBankNow() {
+  initAudio();
+  const inputEl = document.getElementById('bank-amount-input');
+  const amt = parseInt(inputEl ? inputEl.value : 0, 10);
+  if (isNaN(amt) || amt <= 0) {
+    showToast('Vui lòng nhập số tiền cần rút!');
+    return;
+  }
+  if (currentBankSavings < amt) {
+    showToast('Số dư trong két không đủ để rút!');
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('withdrawBank', { amount: amt }, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Lỗi rút tiền!');
+        return;
+      }
+      const money = res.walletMoney !== undefined ? res.walletMoney : res.money;
+      if (money !== undefined) myPlayer.money = money;
+      if (res.bankSavings !== undefined) {
+        currentBankSavings = res.bankSavings;
+      } else if (res.bank) {
+        myPlayer.bank = res.bank;
+        currentBankSavings = res.bank.savings || 0;
+      }
+      updateHUD();
+      playSound('buy');
+      showToast(`📤 Đã rút ${amt.toLocaleString()}đ về ví tiền mặt!`);
+      openBankModal();
+    });
+  } else {
+    myPlayer.money += amt;
+    myPlayer.bank.savings -= amt;
+    currentBankSavings = myPlayer.bank.savings;
+    updateHUD();
+    playSound('buy');
+    showToast(`📤 Đã rút ${amt.toLocaleString()}đ về ví tiền mặt!`);
+    openBankModal();
+  }
+}
+
+function openLotteryModal() {
+  initAudio();
+  renderLotteryTicketsList();
+  openModal('modal-lottery');
+}
+
+function switchLotteryTab(tab) {
+  const btnScratch = document.getElementById('lottery-tab-btn-scratch');
+  const btnTicket = document.getElementById('lottery-tab-btn-ticket');
+  const secScratch = document.getElementById('lottery-tab-scratch');
+  const secTicket = document.getElementById('lottery-tab-ticket');
+
+  if (tab === 'scratch') {
+    if (btnScratch) btnScratch.classList.add('active');
+    if (btnTicket) btnTicket.classList.remove('active');
+    if (secScratch) secScratch.style.display = 'block';
+    if (secTicket) secTicket.style.display = 'none';
+  } else {
+    if (btnScratch) btnScratch.classList.remove('active');
+    if (btnTicket) btnTicket.classList.add('active');
+    if (secScratch) secScratch.style.display = 'none';
+    if (secTicket) secTicket.style.display = 'block';
+    renderLotteryTicketsList();
+  }
+}
+
+function renderLotteryTicketsList() {
+  const container = document.getElementById('lottery-tickets-list');
+  if (!container) return;
+  const tickets = (myPlayer && myPlayer.lotteryTickets) || [];
+  if (tickets.length === 0) {
+    container.innerHTML = '<span style="font-size:11.5px; color:var(--text-muted);">Chưa có vé nào. Hãy mua ngay 1 tờ cầu may!</span>';
+    return;
+  }
+  container.innerHTML = tickets.map((t) => {
+    const num = typeof t === 'object' ? (t.ticket || t.number || JSON.stringify(t)) : t;
+    return `
+      <div style="background:rgba(251,191,36,0.15); border:1px solid #fbbf24; border-radius:8px; padding:4px 10px; font-weight:800; font-family:monospace; color:#fef08a; font-size:13px;">
+        🎟️ ${escapeHtml(num)}
+      </div>
+    `;
+  }).join('');
+}
+
+function playScratchCardNow() {
+  initAudio();
+  if ((myPlayer.money || 0) < 2000) {
+    showToast('Bạn cần tối thiểu 2.000đ để cào thẻ may mắn!');
+    return;
+  }
+
+  const s1 = document.getElementById('scratch-slot-1');
+  const s2 = document.getElementById('scratch-slot-2');
+  const s3 = document.getElementById('scratch-slot-3');
+  const banner = document.getElementById('scratch-result-banner');
+
+  if (s1) { s1.innerText = '❓'; s1.classList.remove('revealed'); }
+  if (s2) { s2.innerText = '❓'; s2.classList.remove('revealed'); }
+  if (s3) { s3.innerText = '❓'; s3.classList.remove('revealed'); }
+  if (banner) { banner.style.display = 'none'; }
+
+  if (socket && socket.connected) {
+    socket.emit('playScratchCard', {}, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Lỗi khi cào vé!');
+        return;
+      }
+      const money = res.walletMoney !== undefined ? res.walletMoney : res.money;
+      if (money !== undefined) myPlayer.money = money;
+      updateHUD();
+      const iconMap = { lotus: '🪷', gold: '💰', crab: '🦀', fish: '🐟', gourd: '🏮' };
+      const rawSlots = res.symbols || res.slots || [];
+      const slots = rawSlots.map((s) => iconMap[s] || s);
+      const prize = res.reward !== undefined ? res.reward : (res.prize || 0);
+      const prizeName = res.prizeName || res.name || 'Thẻ Cào May Mắn';
+      revealScratchOutcome(slots, prize, prizeName, res.message);
+    });
+  } else {
+    myPlayer.money -= 2000;
+    const pool = ['🪷', '💰', '🦀', '⭐', '🧧'];
+    const rSlots = [pool[Math.floor(Math.random() * pool.length)], pool[Math.floor(Math.random() * pool.length)], pool[Math.floor(Math.random() * pool.length)]];
+    let prize = 0;
+    let name = 'Chúc bạn may mắn lần sau!';
+    if (rSlots[0] === rSlots[1] && rSlots[1] === rSlots[2]) {
+      if (rSlots[0] === '🪷') { prize = 50000; name = 'Giải Đặc Biệt Hoa Sen Vàng'; }
+      else if (rSlots[0] === '💰') { prize = 20000; name = 'Giải Nhất Thỏi Vàng'; }
+      else if (rSlots[0] === '🦀') { prize = 8000; name = 'Giải Nhì Con Cua'; }
+      else { prize = 5000; name = 'Giải Ba'; }
+    } else if (rSlots[0] === rSlots[1] || rSlots[1] === rSlots[2] || rSlots[0] === rSlots[2]) {
+      prize = 3000;
+      name = 'Giải Khuyến Khích';
+    } else {
+      prize = 1000;
+      name = 'Lộc An Ủi';
+    }
+    myPlayer.money += prize;
+    updateHUD();
+    revealScratchOutcome(rSlots, prize, name, prize > 0 ? `Chúc mừng bạn trúng ${name}!` : 'Chúc bạn may mắn lần sau!');
+  }
+}
+
+function revealScratchOutcome(slots, prize, name, message) {
+  const s1 = document.getElementById('scratch-slot-1');
+  const s2 = document.getElementById('scratch-slot-2');
+  const s3 = document.getElementById('scratch-slot-3');
+  const banner = document.getElementById('scratch-result-banner');
+
+  setTimeout(() => { if (s1 && slots[0]) { s1.innerText = slots[0]; s1.classList.add('revealed'); playSound('hit'); } }, 150);
+  setTimeout(() => { if (s2 && slots[1]) { s2.innerText = slots[1]; s2.classList.add('revealed'); playSound('hit'); } }, 450);
+  setTimeout(() => {
+    if (s3 && slots[2]) { s3.innerText = slots[2]; s3.classList.add('revealed'); }
+    if (prize > 0) {
+      playSound('fanfare');
+      if (myPlayer.mesh) {
+        triggerCoinParticles(myPlayer.pos.x, 1.2, myPlayer.pos.z);
+        spawnFloatingPopup3D(myPlayer.pos.x, 2.3, myPlayer.pos.z, `+${prize}đ Thẻ Cào`);
+      }
+    } else {
+      playSound('hit');
+    }
+    if (banner) {
+      banner.style.display = 'block';
+      banner.style.background = prize >= 8000 ? 'rgba(34,197,94,0.2)' : 'rgba(234,179,8,0.2)';
+      banner.style.color = prize >= 8000 ? '#4ade80' : '#fef08a';
+      banner.innerText = `🎉 ${name} (+${prize.toLocaleString()}đ)!`;
+    }
+    showToast(`✨ ${message || name} (+${prize.toLocaleString()}đ)!`);
+  }, 750);
+}
+
+function buyLotteryTicketNow() {
+  initAudio();
+  if ((myPlayer.money || 0) < 1000) {
+    showToast('Bạn cần 1.000đ để mua 1 tờ vé số kiến thiết!');
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('buyLotteryTicket', {}, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Lỗi khi mua vé số!');
+        return;
+      }
+      const money = res.walletMoney !== undefined ? res.walletMoney : res.money;
+      if (money !== undefined) myPlayer.money = money;
+      if (res.tickets) myPlayer.lotteryTickets = res.tickets;
+      else if (res.ticketNumber) {
+        if (!myPlayer.lotteryTickets) myPlayer.lotteryTickets = [];
+        myPlayer.lotteryTickets.push({ number: res.ticketNumber });
+      } else if (res.ticket) {
+        if (!myPlayer.lotteryTickets) myPlayer.lotteryTickets = [];
+        myPlayer.lotteryTickets.push(res.ticket);
+      }
+      updateHUD();
+      playSound('buy');
+      renderLotteryTicketsList();
+      const numStr = res.ticketNumber || (res.ticket && res.ticket.number) || 'May Mắn';
+      showToast(`🎟️ Đã mua vé số [${numStr}]! Chúc bạn rinh Jackpot 100.000đ!`);
+    });
+  } else {
+    myPlayer.money -= 1000;
+    const num = String(Math.floor(100000 + Math.random() * 900000));
+    if (!myPlayer.lotteryTickets) myPlayer.lotteryTickets = [];
+    myPlayer.lotteryTickets.push({ number: num, boughtDay: 1 });
+    updateHUD();
+    playSound('buy');
+    renderLotteryTicketsList();
+    showToast(`🎟️ Đã mua vé số [${num}]!`);
+  }
+}
+
+function openGarageModal() {
+  initAudio();
+  const speedBtn = document.getElementById('garage-upgrade-speed-btn');
+  if (speedBtn) {
+    if (myPlayer.motorbikeUpgrade && myPlayer.motorbikeUpgrade.speed) {
+      speedBtn.innerText = '✓ Đã Nâng Cấp Tối Đa (25m/s)';
+      speedBtn.disabled = true;
+      speedBtn.classList.remove('btn-gold');
+    } else {
+      speedBtn.innerText = '⚡ Nâng Cấp (8.000đ)';
+      speedBtn.disabled = false;
+      speedBtn.classList.add('btn-gold');
+    }
+  }
+  openModal('modal-garage');
+}
+
+function upgradeBikeNow(type, color) {
+  initAudio();
+  const cost = type === 'speed' ? 8000 : 2000;
+  if ((myPlayer.money || 0) < cost) {
+    showToast(`Bạn cần tối thiểu ${cost.toLocaleString()}đ để nâng cấp xe máy!`);
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('upgradeMotorbike', { upgradeType: type, color }, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Lỗi nâng cấp xe!');
+        return;
+      }
+      if (res.money !== undefined) myPlayer.money = res.money;
+      if (res.motorbikeUpgrade) myPlayer.motorbikeUpgrade = res.motorbikeUpgrade;
+      updateHUD();
+      playSound('fanfare');
+      showToast(res.message || '🛵 Đã nâng cấp xe thành công!');
+      openGarageModal();
+    });
+  } else {
+    myPlayer.money -= cost;
+    if (!myPlayer.motorbikeUpgrade) myPlayer.motorbikeUpgrade = {};
+    if (type === 'speed') myPlayer.motorbikeUpgrade.speed = 25.0;
+    if (color) myPlayer.motorbikeUpgrade.color = color;
+    updateHUD();
+    playSound('fanfare');
+    showToast('🛵 Đã nâng cấp xe thành công!');
+    openGarageModal();
+  }
+}
+
+function buyEnergyDrinkNow() {
+  initAudio();
+  if ((myPlayer.money || 0) < 500) {
+    showToast('Bạn cần 500đ để mua 1 ly Nước Sâm Bí Đao!');
+    return;
+  }
+
+  if (socket && socket.connected) {
+    socket.emit('buyEnergyDrink', {}, (res) => {
+      if (!res || !res.ok) {
+        showToast((res && res.error) || 'Lỗi mua nước sâm!');
+        return;
+      }
+      if (res.money !== undefined) myPlayer.money = res.money;
+      myPlayer.energyDrinkUntil = res.energyDrinkUntil || (Date.now() + 180000);
+      updateHUD();
+      playSound('buy');
+      showToast(res.message || '🥤 Đã uống Nước Sâm Bí Đao! Tốc độ chạy +40% trong 180s!');
+      closeModal('modal-garage');
+    });
+  } else {
+    myPlayer.money -= 500;
+    myPlayer.energyDrinkUntil = Date.now() + 180000;
+    updateHUD();
+    playSound('buy');
+    showToast('🥤 Đã uống Nước Sâm Bí Đao! Tốc độ chạy +40% trong 180s!');
+    closeModal('modal-garage');
+  }
+}
+
+window.openBankModal = openBankModal;
+window.setBankAmount = setBankAmount;
+window.depositBankNow = depositBankNow;
+window.withdrawBankNow = withdrawBankNow;
+window.openLotteryModal = openLotteryModal;
+window.switchLotteryTab = switchLotteryTab;
+window.playScratchCardNow = playScratchCardNow;
+window.buyLotteryTicketNow = buyLotteryTicketNow;
+window.openGarageModal = openGarageModal;
+window.upgradeBikeNow = upgradeBikeNow;
+window.buyEnergyDrinkNow = buyEnergyDrinkNow;
 
 /* ==================== KHỞI ĐỘNG ỨNG DỤNG ==================== */
 const savedNick = localStorage.getItem('last_nickname');

@@ -952,6 +952,167 @@
   </div>
 </div>
 
+<!-- Modal: Ngân Hàng Thị Trấn & Két Sắt Sinh Lời (Town Bank & Safe Vault) -->
+<div id="modal-bank" class="modal-overlay">
+  <div class="modal-box" style="max-width:520px; text-align:center;">
+    <div class="modal-header">
+      <h3>🏦 NGÂN HÀNG PHỐ CHỢ & KÉT TIẾT KIỆM</h3>
+      <button class="modal-close" onclick="closeModal('modal-bank')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="font-size:44px; margin-bottom:4px;">🏦</div>
+      <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+        Két sắt bảo chứng an toàn tuyệt đối! Gửi tiền tiết kiệm nhận <b>lãi suất 5%/ngày</b> trong game.
+      </p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; text-align:left;">
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(251,191,36,0.3); border-radius:12px; padding:12px;">
+          <div style="font-size:11px; color:var(--text-muted);">Số dư trong ví:</div>
+          <div id="bank-wallet-val" style="font-size:16px; font-weight:800; color:var(--gold);">15,000đ</div>
+        </div>
+        <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.35); border-radius:12px; padding:12px;">
+          <div style="font-size:11px; color:#86efac;">Tiền gửi trong két:</div>
+          <div id="bank-savings-val" style="font-size:16px; font-weight:800; color:#4ade80;">0đ</div>
+        </div>
+      </div>
+
+      <div id="bank-interest-notice" style="display:none; background:rgba(234,179,8,0.15); border:1px dashed #eab308; border-radius:10px; padding:10px; margin-bottom:12px; font-size:12.5px; color:#fef08a;"></div>
+
+      <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:14px; margin-bottom:14px; text-align:left;">
+        <label style="font-size:12.5px; font-weight:700; color:var(--gold); display:block; margin-bottom:6px;">Nhập số tiền giao dịch (đ):</label>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input type="number" id="bank-amount-input" class="join-input" style="margin-bottom:0; flex:1; text-align:left; font-size:14px;" placeholder="Nhập số tiền..." min="1000" step="1000">
+          <button class="chip-btn" onclick="setBankAmount('all_wallet')">Ví Tối Đa</button>
+          <button class="chip-btn" onclick="setBankAmount('all_savings')">Két Tối Đa</button>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="join-btn" style="flex:1; background:linear-gradient(135deg, #059669, #10b981); padding:10px 0; font-size:13px;" onclick="depositBankNow()">
+            💰 GỬI VÀO KÉT (+5% LÃI)
+          </button>
+          <button class="join-btn" style="flex:1; background:linear-gradient(135deg, #d97706, #f59e0b); padding:10px 0; font-size:13px;" onclick="withdrawBankNow()">
+            📤 RÚT TIỀN VỀ VÍ
+          </button>
+        </div>
+      </div>
+
+      <button class="chip-btn" style="width:100%; justify-content:center; padding:8px 0;" onclick="closeModal('modal-bank'); openLeaderboardModal();">
+        🏆 Xem Bảng Vàng Phú Hộ Thị Trấn
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Đại Lý Vé Số Kiến Thiết & Cào May Mắn (Lucky Town Lottery) -->
+<div id="modal-lottery" class="modal-overlay">
+  <div class="modal-box" style="max-width:540px; text-align:center;">
+    <div class="modal-header">
+      <h3>🎟️ ĐẠI LÝ VÉ SỐ KIẾN THIẾT & CÀO MAY MẮN</h3>
+      <button class="modal-close" onclick="closeModal('modal-lottery')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <!-- Tab Bar -->
+      <div class="filter-tabs" style="justify-content:center; margin-bottom:14px;">
+        <button class="filter-tab active" id="lottery-tab-btn-scratch" onclick="switchLotteryTab('scratch')">✨ Thẻ Cào May Mắn (Trúng Ngay)</button>
+        <button class="filter-tab" id="lottery-tab-btn-ticket" onclick="switchLotteryTab('ticket')">🎟️ Vé Số Kiến Thiết 6 Số</button>
+      </div>
+
+      <!-- Tab Cào May Mắn -->
+      <div id="lottery-tab-scratch" style="display:block;">
+        <div style="background:linear-gradient(135deg, rgba(185,28,28,0.2), rgba(15,23,42,0.8)); border:1.5px solid #ef4444; border-radius:14px; padding:16px; margin-bottom:12px;">
+          <div style="font-size:13px; color:#fde68a; font-weight:700; margin-bottom:10px;">
+            CÀO 3 Ô BÍ MẬT — RINH NGAY 50.000đ TIỀN MẶT!
+          </div>
+          <div style="display:flex; justify-content:center; gap:12px; margin-bottom:14px;" id="scratch-slots-row">
+            <div class="scratch-box" id="scratch-slot-1">❓</div>
+            <div class="scratch-box" id="scratch-slot-2">❓</div>
+            <div class="scratch-box" id="scratch-slot-3">❓</div>
+          </div>
+          <div id="scratch-result-banner" style="display:none; font-size:13px; font-weight:800; padding:8px; border-radius:8px; margin-bottom:10px;"></div>
+          <button class="join-btn" style="background:linear-gradient(135deg, #dc2626, #f97316); font-size:14px; padding:10px 0;" onclick="playScratchCardNow()">
+            ✨ CÀO NGAY (Giá 2.000đ / vé cào)
+          </button>
+        </div>
+        <div style="font-size:11.5px; color:var(--text-muted); text-align:left; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
+          <b>Cơ cấu giải thưởng thẻ cào:</b><br>
+          • 🪷 3 Bông Sen Vàng: <b>50.000đ</b> (Giải Đặc Biệt)<br>
+          • 💰 3 Thỏi Vàng: <b>20.000đ</b> (Giải Nhất)<br>
+          • 🦀 3 Con Cua: <b>8.000đ</b> (Giải Nhì)<br>
+          • ✨ 2 biểu tượng giống nhau: <b>3.000đ</b> (Giải Khuyến Khích)<br>
+          • 🧧 Lộc an ủi: <b>1.000đ</b>
+        </div>
+      </div>
+
+      <!-- Tab Vé Số Kiến Thiết -->
+      <div id="lottery-tab-ticket" style="display:none;">
+        <div style="background:linear-gradient(135deg, rgba(234,179,8,0.15), rgba(15,23,42,0.8)); border:1.5px solid var(--gold); border-radius:14px; padding:16px; margin-bottom:12px; text-align:left;">
+          <div style="font-size:15px; font-weight:800; color:var(--gold); margin-bottom:4px;">Xổ Số Kiến Thiết Thị Trấn</div>
+          <p style="font-size:12.5px; color:#cbd5e1; line-height:1.45; margin-bottom:10px;">
+            Mỗi vé gồm 6 chữ số ngẫu nhiên. Giải Độc Đắc trị giá <b>100.000đ</b>!
+          </p>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:13px; font-weight:700; color:#fde68a;">Giá vé: 1.000đ/tờ</span>
+            <button class="btn-action btn-gold" onclick="buyLotteryTicketNow()">🎟️ Mua 1 Vé May Mắn</button>
+          </div>
+          <div style="font-size:12px; font-weight:700; color:#38bdf8; margin-bottom:6px;">Vé bạn đang giữ:</div>
+          <div id="lottery-tickets-list" style="display:flex; flex-wrap:wrap; gap:6px; max-height:100px; overflow-y:auto;">
+            <span style="font-size:11.5px; color:var(--text-muted);">Chưa có vé nào. Hãy mua ngay 1 tờ cầu may!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tiệm Nâng Cấp Xe Máy & Nước Sâm Bí Đao (Speed Workshop & Herbal Tonic) -->
+<div id="modal-garage" class="modal-overlay">
+  <div class="modal-box" style="max-width:520px; text-align:center;">
+    <div class="modal-header">
+      <h3>🛵 TIỆM ĐỘ XE MÁY & NƯỚC SÂM THẢO MỘC</h3>
+      <button class="modal-close" onclick="closeModal('modal-garage')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px; text-align:left;">
+      <!-- Khối Độ Xe Máy -->
+      <div style="background:rgba(255,255,255,0.05); border:1.5px solid #38bdf8; border-radius:14px; padding:14px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span style="font-size:26px;">🛵</span>
+          <div>
+            <div style="font-size:15px; font-weight:800; color:#38bdf8;">Độ Xe Máy Tốc Độ Cao (25m/s)</div>
+            <div style="font-size:11.5px; color:var(--text-muted);">Tăng tốc lướt như bay khắp đại bản đồ 20x</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:12.5px; color:#e2e8f0;">Động cơ siêu tốc (25m/s):</span>
+          <button id="garage-upgrade-speed-btn" class="btn-action btn-gold" onclick="upgradeBikeNow('speed')">⚡ Nâng Cấp (8.000đ)</button>
+        </div>
+        <div style="font-size:12.5px; color:#e2e8f0; margin-bottom:6px;">Sơn màu xe mới (2.000đ/lần):</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="chip-btn" style="background:#b91c1c; color:#fff;" onclick="upgradeBikeNow('color', '#b91c1c')">Đỏ Đua</button>
+          <button class="chip-btn" style="background:#0284c7; color:#fff;" onclick="upgradeBikeNow('color', '#0284c7')">Xanh Biển</button>
+          <button class="chip-btn" style="background:#d97706; color:#fff;" onclick="upgradeBikeNow('color', '#d97706')">Vàng Đồng</button>
+          <button class="chip-btn" style="background:#1e293b; color:#fff;" onclick="upgradeBikeNow('color', '#1e293b')">Đen Nhám</button>
+        </div>
+      </div>
+
+      <!-- Khối Nước Sâm Bí Đao -->
+      <div style="background:linear-gradient(135deg, rgba(34,197,94,0.1), rgba(15,23,42,0.8)); border:1.5px solid #22c55e; border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="font-size:26px;">🥤</span>
+          <div>
+            <div style="font-size:15px; font-weight:800; color:#4ade80;">Nước Sâm Bí Đao Ép Lạnh</div>
+            <div style="font-size:11.5px; color:var(--text-muted);">Thanh nhiệt giải độc, uống vào chạy nhanh +40% trong 3 phút</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; font-weight:700; color:#86efac;">Giá: 500đ / ly</span>
+          <button class="join-btn" style="width:auto; padding:8px 18px; font-size:13px; background:linear-gradient(135deg, #16a34a, #22c55e);" onclick="buyEnergyDrinkNow()">
+            🥤 UỐNG NGAY
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Kho Cá Nhân (Inventory) -->
 <div id="modal-inventory" class="modal-overlay">
   <div class="modal-box">

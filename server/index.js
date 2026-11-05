@@ -211,6 +211,9 @@ io.on("connection", (socket) => {
             HIRE_STAFF_COST: constants.HIRE_STAFF_COST,
             GACHA_COST: constants.GACHA_COST,
             HOUSING_CONFIG: constants.HOUSING_CONFIG,
+            LOTTERY_CONFIG: constants.LOTTERY_CONFIG,
+            BANK_CONFIG: constants.BANK_CONFIG,
+            GARAGE_CONFIG: constants.GARAGE_CONFIG,
           },
           snapshot,
         });
@@ -716,6 +719,67 @@ io.on("connection", (socket) => {
   };
   socket.on("signGuestbook", handleSignGuestbook);
   socket.on("signHouseGuestbook", handleSignGuestbook);
+
+  // Dịch vụ Nhà Phố: Ngân Hàng, Vé Số & Tiệm Xe Máy
+  socket.on("getBankInfo", (_, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.getBankInfo(userNickname);
+    if (ack) ack(res);
+  });
+
+  socket.on("depositBank", ({ amount }, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.depositBank(userNickname, amount);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.walletMoney });
+    }
+  });
+
+  socket.on("withdrawBank", ({ amount }, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.withdrawBank(userNickname, amount);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.walletMoney });
+    }
+  });
+
+  socket.on("buyLotteryTicket", (_, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.buyLotteryTicket(userNickname);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.walletMoney });
+    }
+  });
+
+  socket.on("playScratchCard", (_, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.playScratchCard(userNickname);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.walletMoney });
+    }
+  });
+
+  socket.on("upgradeMotorbike", (options, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.upgradeMotorbike(userNickname, options || {});
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.walletMoney });
+    }
+  });
+
+  socket.on("buyEnergyDrink", (_, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const res = world.buyEnergyDrink(userNickname);
+    if (ack) ack(res);
+    if (res.ok) {
+      socket.emit("player_money_sync", { money: res.walletMoney });
+    }
+  });
 
   // ---- Giữ nguyên toàn bộ sự kiện Kinh doanh & Mini-game hiện có ----
   socket.on("buyWholesale", ({ goodId, amount }, ack) => {

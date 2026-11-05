@@ -8,7 +8,7 @@
     "dev": "node server/index.js",
     "build": "node -c server/index.js && node -c server/world.js && node -c server/persistence.js && node -c server/moderation.js && node -c server/seats.js && node -c server/activities/index.js && node -c shared/constants.js && node -c shared/world-layout.js && node -c shared/colliders.js && node -c shared/festivals.js && node -c shared/weather.js && node -c client/i18n.js && node -c client/js/state-audio.js && node -c client/js/world-3d.js && node -c client/js/entities-3d.js && node -c client/js/controls-loop.js && node -c client/js/network-ui.js && node -c client/js/town-expansion.js",
     "lint": "npm run build",
-    "test": "PORT=3000 node server/index.js > /dev/null 2>&1 & sleep 2 && node scripts/smoke-test.js && node scripts/test-i18n.js && node scripts/test-baucua-round.js && node scripts/test-weather-consistency.js && node scripts/test-colliders.js && node scripts/test-mobile-ui.js && node scripts/test-gameplay-loa-phuong.js",
+    "test": "PORT=34567 node server/index.js > /dev/null 2>&1 & SERVER_PID=$!; sleep 2; PORT=34567 TEST_PORT=34567 node scripts/smoke-test.js && TEST_PORT=34567 node scripts/test-i18n.js && TEST_PORT=34567 node scripts/test-baucua-round.js && TEST_PORT=34567 node scripts/test-weather-consistency.js && TEST_PORT=34567 node scripts/test-colliders.js && TEST_PORT=34567 node scripts/test-mobile-ui.js && TEST_PORT=34567 node scripts/test-gameplay-loa-phuong.js; STATUS=$?; kill $SERVER_PID 2>/dev/null; exit $STATUS",
     "test:gameplay": "node scripts/test-gameplay-loa-phuong.js",
     "test:all": "node scripts/verify-all-features.js"
   },

@@ -146,12 +146,12 @@
     },
 
     // ----------------------------------------------------
-    // 6. PHỐ DÂN CƯ ĐÔNG (x = 26, z = 0)
+    // 6. PHỐ DÂN CƯ & THƯƠNG MẠI ĐÔNG (x = 26, z = 0)
     // ----------------------------------------------------
     {
       type: "box",
       id: "residence_shop_1",
-      name: "Tiệm Tạp Hóa Bà Năm",
+      name: "Ngân Hàng Phố Chợ & Két Tiết Kiệm",
       minX: 25.8,
       maxX: 32.8,
       minZ: -12.3,
@@ -160,7 +160,7 @@
     {
       type: "box",
       id: "residence_shop_2",
-      name: "Tiệm Sửa Xe Máy Anh Ba",
+      name: "Đại Lý Vé Số & Thẻ Cào May Mắn",
       minX: 25.8,
       maxX: 32.8,
       minZ: -3.3,
@@ -168,8 +168,8 @@
     },
     {
       type: "box",
-      id: "residence_player_house",
-      name: "Căn Nhà Riêng Tiểu Thương",
+      id: "residence_garage",
+      name: "Tiệm Độ Xe Máy & Nước Sâm Bí Đao",
       minX: 25.5,
       maxX: 33.0,
       minZ: 5.6,

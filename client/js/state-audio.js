@@ -417,28 +417,64 @@ function updateContextAction() {
     return;
   }
 
-  if (Math.hypot(px - 0, pz - 13.5) <= 10.5) {
-    applyContextUI('tea', '☕', 'Đại Quảng Trường Trà Đá (E)');
+  if (Math.hypot(px - 26, pz - (-9)) <= 7.0) {
+    applyContextUI('bank', '🏦', 'Ngân Hàng Phố Chợ (E)');
+    return;
+  }
+  if (Math.hypot(px - 26, pz - 0) <= 7.0) {
+    applyContextUI('lottery', '🎫', 'Đại Lý Vé Số & Cào (E)');
+    return;
+  }
+  if (Math.hypot(px - 26, pz - 9.5) <= 7.0) {
+    applyContextUI('garage', '🛵', 'Tiệm Độ Xe & Nước Sâm (E)');
+    return;
+  }
+  if (Math.hypot(px - 48, pz - 22) <= 10.0) {
+    applyContextUI('house', '🏠', 'Căn Nhà Riêng Của Bạn (E)');
+    return;
+  }
+  if (Math.hypot(px - (-48), pz - (-16)) <= 11.0) {
+    applyContextUI('baucua', '🎲', 'Đại Lầu Hội Bầu Cua (E)');
+    return;
+  }
+  if (Math.hypot(px - 48, pz - (-16)) <= 11.0) {
+    applyContextUI('shuttlecock', '🪶', 'Đấu Trường Đá Cầu (E)');
+    return;
+  }
+  if (Math.hypot(px - (-8), pz - 27) <= 11.0) {
+    applyContextUI('tea', '☕', 'Quán Trà Đá Vỉa Hè (E)');
     return;
   }
   if (Math.hypot(px - 0, pz - 32) <= 10.5) {
     applyContextUI('fish', '🎣', 'Câu Cá Bến Sông (E)');
     return;
   }
-  if (Math.hypot(px - 8, pz - -15) <= 11.0) {
-    applyContextUI('shuttlecock', '🪶', 'Đấu Trường Đá Cầu (K)');
+  if (Math.hypot(px - (-26), pz - 0) <= 8.5) {
+    applyContextUI('hall', '🏛️', 'Bảng Tin & Sự Kiện (E)');
     return;
   }
-  if (Math.hypot(px - -8, pz - -16) <= 11.0) {
-    applyContextUI('baucua', '🎲', 'Đại Lầu Hội Bầu Cua (E)');
+  if (Math.hypot(px - (-38), pz - 0) <= 7.5) {
+    applyContextUI('tailor', '👘', 'Nhà May Áo Dài Cô Ba (E)');
     return;
   }
-  if (Math.hypot(px - -26, pz - 0) <= 8.5) {
-    applyContextUI('hall', '📋', 'Bảng Tin (E)');
+  if (Math.hypot(px - (-38), pz - (-18)) <= 7.5) {
+    applyContextUI('bank', '🪙', 'Tiệm Vàng Kim Phát (E)');
     return;
   }
-  if (Math.hypot(px - 26, pz - 0) <= 8.5) {
-    applyContextUI('house', '🏠', 'Căn Nhà Riêng (E)');
+  if (Math.hypot(px - (-38), pz - 18) <= 7.5) {
+    applyContextUI('garage', '🌿', 'Tiệm Thuốc Bắc Vạn An (E)');
+    return;
+  }
+  if (Math.hypot(px - 38, pz - (-18)) <= 7.5) {
+    applyContextUI('tea', '☕', 'Cà Phê Vợt Phố Cổ (E)');
+    return;
+  }
+  if (Math.hypot(px - 38, pz - 0) <= 7.5) {
+    applyContextUI('house', '🏨', 'Khách Sạn Đông Dương (E)');
+    return;
+  }
+  if (Math.hypot(px - 38, pz - 18) <= 7.5) {
+    applyContextUI('wholesale', '🍧', 'Gánh Chè Ba Miền (E)');
     return;
   }
 
@@ -454,6 +490,16 @@ function handleContextAction() {
     } else {
       interactNearest();
     }
+  } else if (currentContextActionType === 'bank') {
+    if (typeof openBankModal === 'function') openBankModal();
+  } else if (currentContextActionType === 'lottery') {
+    if (typeof openLotteryModal === 'function') openLotteryModal();
+  } else if (currentContextActionType === 'garage') {
+    if (typeof openGarageModal === 'function') openGarageModal();
+  } else if (currentContextActionType === 'tailor') {
+    if (typeof openCustomizationModal === 'function') openCustomizationModal();
+  } else if (currentContextActionType === 'wholesale') {
+    if (typeof openWholesaleModal === 'function') openWholesaleModal();
   } else if (currentContextActionType === 'tea') {
     openTeaTableModal();
   } else if (currentContextActionType === 'fish') {

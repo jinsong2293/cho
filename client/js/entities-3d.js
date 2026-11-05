@@ -313,12 +313,12 @@ function createVietnameseTree(x, z, type) {
 
 function buildVietnameseShophouses() {
   const houses = [
-    { x: -38, z: -18, w: 7, h: 9, d: 8, wall: 0xfacc15, awning: 0xb91c1c, sign: "TIỆM VÀNG KIM PHÁT" },
-    { x: -38, z:   0, w: 7, h: 10, d: 9, wall: 0xfde047, awning: 0x15803d, sign: "NHÀ MAY ÁO DÀI CÔ BA" },
-    { x: -38, z:  18, w: 7, h: 8.5, d: 8, wall: 0xfef08a, awning: 0x1d4ed8, sign: "TIỆM THUỐC BẮC VẠN AN" },
-    { x:  38, z: -18, w: 7, h: 9.5, d: 8, wall: 0xfacc15, awning: 0xb45309, sign: "CÀ PHÊ VỢT PHỐ CỔ" },
-    { x:  38, z:   0, w: 7, h: 10.5, d: 9, wall: 0xfde047, awning: 0x991b1b, sign: "KHÁCH SẠN ĐÔNG DƯƠNG" },
-    { x:  38, z:  18, w: 7, h: 9, d: 8, wall: 0xfef08a, awning: 0x047857, sign: "GÁNH CHÈ BA MIỀN" },
+    { x: -38, z: -18, w: 7, h: 9, d: 8, wall: 0xfacc15, awning: 0xb91c1c, sign: "TIỆM VÀNG KIM PHÁT", sub: "[Bấm E: Mua Vàng & Gửi Tiết Kiệm]" },
+    { x: -38, z:   0, w: 7, h: 10, d: 9, wall: 0xfde047, awning: 0x15803d, sign: "NHÀ MAY ÁO DÀI CÔ BA", sub: "[Bấm E: May Đo Áo Dài, Nón Lá, Cổ Phục]" },
+    { x: -38, z:  18, w: 7, h: 8.5, d: 8, wall: 0xfef08a, awning: 0x1d4ed8, sign: "TIỆM THUỐC BẮC VẠN AN", sub: "[Bấm E: Uống Nước Sâm Thảo Mộc +40% Tốc Độ]" },
+    { x:  38, z: -18, w: 7, h: 9.5, d: 8, wall: 0xfacc15, awning: 0xb45309, sign: "CÀ PHÊ VỢT PHỐ CỔ", sub: "[Bấm E: Thưởng Thức Cà Phê Vợt Vỉa Hè]" },
+    { x:  38, z:   0, w: 7, h: 10.5, d: 9, wall: 0xfde047, awning: 0x991b1b, sign: "KHÁCH SẠN ĐÔNG DƯƠNG", sub: "[Bấm E: Vào Nhà Riêng & Nghỉ Dưỡng]" },
+    { x:  38, z:  18, w: 7, h: 9, d: 8, wall: 0xfef08a, awning: 0x047857, sign: "GÁNH CHÈ BA MIỀN", sub: "[Bấm E: Nhập Hàng Chè & Nông Sản]" },
   ];
 
   const roofMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.55 });
@@ -381,6 +381,13 @@ function buildVietnameseShophouses() {
     signSprite.position.set(0, h.h + 3.2, 0);
     signSprite.scale.set(5.2, 1.1, 1);
     group.add(signSprite);
+
+    if (h.sub) {
+      const subSprite = createTextSprite(h.sub, "#38bdf8", "rgba(15, 23, 42, 0.92)");
+      subSprite.position.set(0, h.h + 2.0, 0);
+      subSprite.scale.set(4.6, 0.75, 1);
+      group.add(subSprite);
+    }
 
     scene.add(group);
   });

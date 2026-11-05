@@ -16,6 +16,9 @@ const {
   DAY_LENGTH,
   INITIAL_MONEY,
   HOUSING_CONFIG,
+  LOTTERY_CONFIG,
+  BANK_CONFIG,
+  GARAGE_CONFIG,
 } = require("../shared/constants");
 const {
   BOUNDS,
@@ -1895,6 +1898,194 @@ function signHouseGuestbook(ownerNick, authorNick, rawNote) {
   return { ok: true, houseConfig: hc };
 }
 
+/* ==========================================================================
+   DỊCH VỤ NHÀ PHỐ THƯƠNG MẠI: NGÂN HÀNG, VÉ SỐ, SỬA XE & NƯỚC SÂM
+   ========================================================================== */
+function getBankInfo(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const hc = p.houseConfig || {};
+  const currentDay = getDay();
+  let savings = Number(hc.bankSavings) || 0;
+  const lastDay = Number(hc.lastInterestDay) || currentDay;
+  let interestGained = 0;
+
+  if (currentDay > lastDay && savings > 0) {
+    const daysPassed = currentDay - lastDay;
+    interestGained = Math.floor(savings * (BANK_CONFIG.interestRate || 0.05) * daysPassed);
+    savings += interestGained;
+    hc.bankSavings = savings;
+    hc.lastInterestDay = currentDay;
+    p.houseConfig = hc;
+    upsertPlayer(nickname, { houseConfig: hc });
+  }
+
+  return {
+    ok: true,
+    bankSavings: savings,
+    interestGained,
+    walletMoney: p.money,
+    currentDay,
+    interestRate: BANK_CONFIG.interestRate || 0.05,
+  };
+}
+
+function depositBank(nickname, amount) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const amt = Math.floor(Number(amount));
+  if (isNaN(amt) || amt < 1000) return { ok: false, error: "Số tiền gửi tối thiểu là 1.000đ!" };
+  if ((p.money || 0) < amt) return { ok: false, error: `Số dư trong ví không đủ (${(p.money || 0).toLocaleString()}đ)!` };
+
+  const hc = p.houseConfig || {};
+  getBankInfo(nickname);
+
+  p.money -= amt;
+  hc.bankSavings = (Number(hc.bankSavings) || 0) + amt;
+  hc.lastInterestDay = getDay();
+  p.houseConfig = hc;
+
+  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  return {
+    ok: true,
+    message: `Đã gửi thành công ${amt.toLocaleString()}đ vào Két Sắt Ngân Hàng!`,
+    walletMoney: p.money,
+    bankSavings: hc.bankSavings,
+  };
+}
+
+function withdrawBank(nickname, amount) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const hc = p.houseConfig || {};
+  getBankInfo(nickname);
+
+  const savings = Number(hc.bankSavings) || 0;
+  const amt = Math.floor(Number(amount));
+  if (isNaN(amt) || amt <= 0) return { ok: false, error: "Số tiền rút không hợp lệ!" };
+  if (amt > savings) return { ok: false, error: `Số dư trong két chỉ có ${savings.toLocaleString()}đ!` };
+
+  hc.bankSavings = savings - amt;
+  p.money += amt;
+  p.houseConfig = hc;
+
+  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  return {
+    ok: true,
+    message: `Đã rút thành công ${amt.toLocaleString()}đ về ví tiền mặt!`,
+    walletMoney: p.money,
+    bankSavings: hc.bankSavings,
+  };
+}
+
+function buyLotteryTicket(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const price = LOTTERY_CONFIG.ticketPrice || 1000;
+  if ((p.money || 0) < price) return { ok: false, error: `Bạn cần ${price.toLocaleString()}đ để mua vé số kiến thiết!` };
+
+  p.money -= price;
+  const ticketNumber = String(Math.floor(100000 + Math.random() * 900000));
+  const hc = p.houseConfig || {};
+  if (!Array.isArray(hc.lotteryTickets)) hc.lotteryTickets = [];
+  hc.lotteryTickets.unshift({ ticket: ticketNumber, day: getDay(), time: Date.now() });
+  if (hc.lotteryTickets.length > 10) hc.lotteryTickets.pop();
+  p.houseConfig = hc;
+
+  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  return {
+    ok: true,
+    ticketNumber,
+    message: `Đã mua vé số kiến thiết số [${ticketNumber}]! Chúc bạn đại cát đại lợi rinh giải độc đắc 100.000đ!`,
+    walletMoney: p.money,
+    tickets: hc.lotteryTickets,
+  };
+}
+
+function playScratchCard(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const price = LOTTERY_CONFIG.scratchPrice || 2000;
+  if ((p.money || 0) < price) return { ok: false, error: `Bạn cần ${price.toLocaleString()}đ để cào vé số may mắn!` };
+
+  p.money -= price;
+
+  const symbolsPool = ["lotus", "gold", "crab", "fish", "gourd"];
+  const sym1 = symbolsPool[Math.floor(Math.random() * symbolsPool.length)];
+  const sym2 = symbolsPool[Math.floor(Math.random() * symbolsPool.length)];
+  const sym3 = symbolsPool[Math.floor(Math.random() * symbolsPool.length)];
+  const symbols = [sym1, sym2, sym3];
+
+  let reward = 1000;
+  let prizeName = "Lộc May Mắn";
+
+  if (sym1 === sym2 && sym2 === sym3) {
+    if (sym1 === "lotus") { reward = 50000; prizeName = "Giải Đặc Biệt (3 Hoa Sen Vàng)"; }
+    else if (sym1 === "gold") { reward = 20000; prizeName = "Giải Nhất (3 Thỏi Vàng)"; }
+    else if (sym1 === "crab") { reward = 8000; prizeName = "Giải Nhì (3 Con Cua)"; }
+    else { reward = 5000; prizeName = "Giải Ba (3 Biểu Tượng Cùng Loại)"; }
+  } else if (sym1 === sym2 || sym2 === sym3 || sym1 === sym3) {
+    reward = 3000;
+    prizeName = "Giải Khuyến Khích (2 Biểu Tượng Cặp Đôi)";
+  }
+
+  p.money += reward;
+  upsertPlayer(nickname, { money: p.money });
+
+  return {
+    ok: true,
+    symbols,
+    reward,
+    netGain: reward - price,
+    prizeName,
+    walletMoney: p.money,
+    message: `🎉 Kết quả cào: [${symbols.join(" - ")}] — ${prizeName}! Bạn nhận được +${reward.toLocaleString()}đ!`,
+  };
+}
+
+function upgradeMotorbike(nickname, options = {}) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const isSpeed = options.type === "speed";
+  const cost = isSpeed ? (GARAGE_CONFIG.bikeUpgradeCost || 8000) : 2000;
+
+  if ((p.money || 0) < cost) {
+    return { ok: false, error: `Bạn cần ${cost.toLocaleString()}đ để thực hiện dịch vụ này!` };
+  }
+
+  p.money -= cost;
+  const hc = p.houseConfig || {};
+  if (isSpeed) hc.bikeSpeed = GARAGE_CONFIG.upgradedSpeed || 25.0;
+  if (options.color) hc.bikeColor = options.color;
+  p.houseConfig = hc;
+
+  upsertPlayer(nickname, { money: p.money, houseConfig: hc });
+  return {
+    ok: true,
+    bikeSpeed: hc.bikeSpeed || 25.0,
+    bikeColor: hc.bikeColor || "#dc2626",
+    walletMoney: p.money,
+    message: isSpeed ? "Đã nâng cấp động cơ xe máy thành công! Tốc độ tối đa đạt 25m/s cực bốc!" : `Đã sơn mới màu xe máy thành công!`,
+  };
+}
+
+function buyEnergyDrink(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
+  const cost = GARAGE_CONFIG.drinkCost || 500;
+  if ((p.money || 0) < cost) return { ok: false, error: `Bạn cần ${cost.toLocaleString()}đ để mua nước sâm giải nhiệt!` };
+
+  p.money -= cost;
+  upsertPlayer(nickname, { money: p.money });
+  return {
+    ok: true,
+    walletMoney: p.money,
+    duration: GARAGE_CONFIG.drinkDuration || 180,
+    multiplier: GARAGE_CONFIG.drinkSpeedMultiplier || 1.4,
+    message: "Đã uống 1 ly Nước Sâm Bí Đao Hạt Chia thơm mát! Chạy nhanh như gió (+40%) trong 3 phút!",
+  };
+}
+
 function toggleBlockUser(nickname, targetNick) {
   const p = players[nickname];
   if (!p) return { ok: false, error: "Người chơi không tồn tại!" };
@@ -2038,6 +2229,13 @@ module.exports = {
   buyOrUpgradeHouse,
   buyHouseItem,
   signHouseGuestbook,
+  getBankInfo,
+  depositBank,
+  withdrawBank,
+  buyLotteryTicket,
+  playScratchCard,
+  upgradeMotorbike,
+  buyEnergyDrink,
   toggleBlockUser,
   getSnapshot,
   popEvents,

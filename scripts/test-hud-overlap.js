@@ -58,7 +58,8 @@ async function runTest(options = {}) {
     page.on("pageerror", (err) => consoleErrors.push(err.message));
 
     try {
-      await page.goto("http://127.0.0.1:3000/", { waitUntil: "networkidle", timeout: 12000 });
+      const TEST_PORT = process.env.TEST_PORT || process.env.PORT || 34567;
+      await page.goto(`http://127.0.0.1:${TEST_PORT}/`, { waitUntil: "networkidle", timeout: 12000 });
 
       // If join screen is open, click join button to enter town
       const joinBtn = await page.$("#join-screen .join-btn");
