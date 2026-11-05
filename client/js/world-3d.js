@@ -85,7 +85,7 @@ function init3D() {
 
   const isPortrait = window.innerWidth < window.innerHeight;
   camera = new THREE.PerspectiveCamera(isPortrait ? 60 : 48, window.innerWidth / window.innerHeight, 0.1, 3500);
-  camera.position.set(0, 3.8, 11.8);
+  camera.position.set(0, 4.8, 26.5);
 
   renderer = new THREE.WebGLRenderer({
     antialias: !isSoftwareGl,
@@ -107,7 +107,7 @@ function init3D() {
   controls.maxPolarAngle = Math.PI / 2 - 0.03;
   controls.minDistance = 2.8;
   controls.maxDistance = 95;
-  controls.target.set(0, 1.1, 6.0);
+  controls.target.set(0, 1.1, 19.0);
   controls.update();
 
   hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x365314, 0.95);
@@ -758,9 +758,9 @@ function buildVietnameseMarketTown() {
   scene.add(grass);
   townGroundMesh = grass;
 
-  // Đại quảng trường gạch đỏ trung tâm mở rộng (176m x 176m)
+  // Thảm cỏ & quảng trường công viên trung tâm (176m x 176m)
   const plazaGeo = new THREE.PlaneGeometry(176, 176);
-  const plazaMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.72, metalness: 0.08 });
+  const plazaMat = new THREE.MeshStandardMaterial({ color: 0x274e13, roughness: 0.92, metalness: 0.04 });
   plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
   plazaMesh.rotation.x = -Math.PI / 2;
   plazaMesh.receiveShadow = true;
@@ -846,15 +846,11 @@ function buildVietnameseMarketTown() {
     scene.add(curb);
   });
 
-  const grid = new THREE.GridHelper(176, 88, 0xf59e0b, 0x78350f);
-  grid.position.y = 0.025;
-  scene.add(grid);
-
   buildBenThanhClockTower(0, -34);
   buildWelcomeGate(0, 24);
   buildGoldenLotusFountain();
   buildTownRoadNetwork();
-  buildTownDirectionalSignpost(0, -6);
+  buildTownDirectionalSignpost(-5.2, -7.5);
   buildBauCuaBooth(-48, -16);
   buildSidewalkTeaTable(-16, 28);
   buildRiversidePier(0, 34);
@@ -1159,42 +1155,85 @@ function buildTownDirectionalSignpost(x, z) {
   postGroup.position.set(x, 0, z);
 
   const postMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 });
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 4.4, 12), postMat);
-  post.position.y = 2.2;
-  postGroup.add(post);
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.6 });
 
-  const finial = new THREE.Mesh(
-    new THREE.ConeGeometry(0.32, 0.5, 8),
-    new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.7 })
+  // 2 Cột gỗ lim nẹp bảng chỉ dẫn
+  [-1.2, 1.2].forEach((px) => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 3.6, 10), postMat);
+    post.position.set(px, 1.8, 0);
+    postGroup.add(post);
+
+    const finial = new THREE.Mesh(
+      new THREE.ConeGeometry(0.2, 0.35, 8),
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.7 })
+    );
+    finial.position.set(px, 3.75, 0);
+    postGroup.add(finial);
+  });
+
+  // Mái ngói che bảng chỉ dẫn cổ kính
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.1, 0.65, 4), roofMat);
+  roof.rotation.y = Math.PI / 4;
+  roof.position.set(0, 3.8, 0);
+  postGroup.add(roof);
+
+  // Đèn lồng vàng soi sáng bảng vào ban đêm
+  const lantern = new THREE.Mesh(
+    new THREE.SphereGeometry(0.2, 10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 0.8 })
   );
-  finial.position.y = 4.65;
-  postGroup.add(finial);
+  lantern.position.set(0, 3.4, 0.25);
+  postGroup.add(lantern);
 
-  // Biển chỉ hướng 4 phương chuẩn theo quy hoạch 3.0
-  const signN = createTextSprite("⬆️ BẮC: CHỢ BẾN THÀNH & GIAN HÀNG (28m)", "#fef08a", "rgba(15, 23, 42, 0.95)");
-  signN.position.set(0, 3.8, -1.2);
-  signN.scale.set(4.4, 0.7, 1);
-  postGroup.add(signN);
+  // Bảng gỗ thông tin 4 phương hợp nhất bằng Canvas độ nét cao
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 512;
+  signCanvas.height = 340;
+  const sctx = signCanvas.getContext('2d');
 
-  const signS = createTextSprite("⬇️ NAM: BẾN TÀU CÂU CÁ & TRÀ ĐÁ BỜ SÔNG (34m)", "#bae6fd", "rgba(3, 105, 161, 0.95)");
-  signS.position.set(0, 3.2, 1.2);
-  signS.scale.set(4.4, 0.7, 1);
-  postGroup.add(signS);
+  sctx.fillStyle = '#271406';
+  sctx.fillRect(0, 0, 512, 340);
+  sctx.strokeStyle = '#f59e0b';
+  sctx.lineWidth = 8;
+  sctx.strokeRect(6, 6, 500, 328);
 
-  const signW = createTextSprite("⬅️ TÂY: PHỐ CỔ VĂN HÓA & SỚI BẦU CUA (38m)", "#fecdd3", "rgba(190, 18, 60, 0.95)");
-  signW.position.set(-2.0, 2.6, 0);
-  signW.scale.set(4.4, 0.7, 1);
-  postGroup.add(signW);
+  sctx.fillStyle = '#fef08a';
+  sctx.font = 'bold 26px sans-serif';
+  sctx.textAlign = 'center';
+  sctx.fillText('📍 SƠ ĐỒ CHỈ HƯỚNG THỊ TRẤN', 256, 44);
 
-  const signE = createTextSprite("ĐÔNG: PHỐ THƯƠNG MẠI & SÂN ĐÁ CẦU (38m) ➡️", "#bbf7d0", "rgba(22, 101, 52, 0.95)");
-  signE.position.set(2.0, 2.0, 0);
-  signE.scale.set(4.4, 0.7, 1);
-  postGroup.add(signE);
+  sctx.font = 'bold 21px sans-serif';
+  sctx.textAlign = 'left';
 
-  const signSE = createTextSprite("↗️ ĐÔNG NAM: KHU BIỆT THỰ & BẤT ĐỘNG SẢN (52m)", "#fef08a", "rgba(180, 83, 9, 0.95)");
-  signSE.position.set(1.5, 1.4, 0.9);
-  signSE.scale.set(4.2, 0.65, 1);
-  postGroup.add(signSE);
+  sctx.fillStyle = '#fde047';
+  sctx.fillText('⬆️ BẮC: Chợ Bến Thành & Phố Ẩm Thực (26m)', 28, 96);
+
+  sctx.fillStyle = '#7dd3fc';
+  sctx.fillText('⬇️ NAM: Cầu Tàu Bến Sông & Trà Đá (32m)', 28, 146);
+
+  sctx.fillStyle = '#fca5a5';
+  sctx.fillText('⬅️ TÂY: Phố Cổ Hội An & Sới Bầu Cua (36m)', 28, 196);
+
+  sctx.fillStyle = '#86efac';
+  sctx.fillText('➡️ ĐÔNG: Phố Tài Chính & Sân Đá Cầu (36m)', 28, 246);
+
+  sctx.fillStyle = '#fde047';
+  sctx.fillText('↗️ ĐÔNG NAM: Dinh Thự Người Chơi (50m)', 28, 296);
+
+  const signTex = new THREE.CanvasTexture(signCanvas);
+  const signBoard = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 1.6),
+    new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.45 })
+  );
+  signBoard.position.set(0, 2.1, 0.05);
+  postGroup.add(signBoard);
+
+  const backBoard = new THREE.Mesh(
+    new THREE.BoxGeometry(2.45, 1.65, 0.08),
+    postMat
+  );
+  backBoard.position.set(0, 2.1, 0);
+  postGroup.add(backBoard);
 
   scene.add(postGroup);
 }

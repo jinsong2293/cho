@@ -123,58 +123,60 @@ function getRoomChatHistory(roomId = "public-1") {
   return r.chatHistory;
 }
 
-// 6 Sạp Hàng Truyền Thống & Phố Thị Việt Nam quanh Đài Sen Trung Tâm
+// 6 Sạp Hàng Truyền Thống & Phố Thị Việt Nam tại Khu Chợ Bến Thành (Hai Cánh Đông - Tây)
 const INITIAL_STALL_DEFS = [
+  // Cánh Tây Chợ Bến Thành (x = -15)
   {
     id: "stall-1",
     name: "Sạp Trái Cây Miền Tây",
-    x: -13,
-    z: -11,
+    x: -15,
+    z: -25,
     color: 0x16a34a,
     category: "Trái cây",
     goods: { apple: 15, orange: 12 },
   },
   {
-    id: "stall-2",
-    name: "Quán Cà Phê Vợt & Nước Mía",
-    x: 13,
-    z: -11,
-    color: 0x0284c7,
-    category: "Giải khát",
-    goods: { coffee: 14, carrot: 16 },
-  },
-  {
     id: "stall-3",
     name: "Tiệm Phở Bò & Bánh Mì Sài Gòn",
-    x: -13,
-    z: 11,
+    x: -15,
+    z: -30,
     color: 0xd97706,
     category: "Ẩm thực",
     goods: { bread: 16, cake: 10, tea: 8 },
   },
   {
+    id: "stall-5",
+    name: "Bách Hóa Tổng Hợp Phố Chợ",
+    x: -15,
+    z: -35,
+    color: 0x0d9488,
+    category: "Tổng hợp",
+    goods: { apple: 10, bread: 10, coffee: 8, tea: 6 },
+  },
+  // Cánh Đông Chợ Bến Thành (x = +15)
+  {
+    id: "stall-2",
+    name: "Quán Cà Phê Vợt & Nước Mía",
+    x: 15,
+    z: -25,
+    color: 0x0284c7,
+    category: "Giải khát",
+    goods: { coffee: 14, carrot: 16 },
+  },
+  {
     id: "stall-4",
     name: "Hàng Nón Lá & Hoa Xuân",
-    x: 13,
-    z: 11,
+    x: 15,
+    z: -30,
     color: 0xe11d48,
     category: "Thủ công",
     goods: { toy: 12, flower: 14 },
   },
   {
-    id: "stall-5",
-    name: "Bách Hóa Tổng Hợp Phố Chợ",
-    x: -9,
-    z: 0,
-    color: 0x0d9488,
-    category: "Tổng hợp",
-    goods: { apple: 10, bread: 10, coffee: 8, tea: 6 },
-  },
-  {
     id: "stall-6",
     name: "Tiệm Trầm Hương & Ngọc Phố Cổ",
-    x: 9,
-    z: 0,
+    x: 15,
+    z: -35,
     color: 0x9333ea,
     category: "Đặc sản",
     goods: { gem: 8, flower: 12, toy: 8 },
@@ -318,11 +320,11 @@ const CUSTOMER_DEFS = [
     name: "Anh Shipper Vui Tính",
     type: "helmet",
     role: "shopper",
-    homeZone: "central_market",
+    homeZone: "east_commercial_street",
     waypoints: [
-      { x: 0.0, z: -7.0, wait: 6000, dialog: "Đơn bánh mì nóng hổi, cà phê đá giao ngay trong một nốt nhạc!" },
-      { x: 0.0, z: 7.0, wait: 6000, dialog: "Thị trấn hôm nay rộn ràng khách, chạy đơn mệt mà vui ghê!" },
-      { x: -6.0, z: 0.0, wait: 5000, dialog: "Chào bà con! Ai cần gửi hàng liên phường ới em nhé!" }
+      { x: 34.0, z: 12.0, wait: 6000, dialog: "Ghé tiệm độ xe thay nhớt rồi chạy đơn tiếp cho kịp khách!" },
+      { x: 20.0, z: 0.0, wait: 6000, dialog: "Đại lộ Đông - Tây rộng thênh thang, phóng xe máy êm ru!" },
+      { x: 2.5, z: 12.0, wait: 6000, dialog: "Đơn bánh mì nóng hổi, cà phê đá giao ngay trong một nốt nhạc!" }
     ]
   },
   {
@@ -342,9 +344,9 @@ const CUSTOMER_DEFS = [
     role: "cyclo",
     homeZone: "central_market",
     waypoints: [
-      { x: -2.5, z: -6.0, wait: 7000, dialog: "Ai đi xích lô dạo mát ngắm phố chợ thị trấn không nào?" },
-      { x: 2.5, z: -6.0, wait: 7000, dialog: "Xích lô thong thả qua tháp đồng hồ Bến Thành, gió mát lộng!" },
-      { x: 0.0, z: -2.0, wait: 8000, dialog: "Bà con mỏi chân cứ lên xe chú Sáu chở dạo quanh một vòng!" }
+      { x: -3.5, z: 14.0, wait: 7000, dialog: "Ai đi xích lô dạo mát ngắm đại lộ thị trấn không nào?" },
+      { x: -3.5, z: -14.0, wait: 7000, dialog: "Xích lô thong thả qua tháp đồng hồ Bến Thành, gió mát lộng!" },
+      { x: -3.5, z: 0.0, wait: 8000, dialog: "Bà con mỏi chân cứ lên xe chú Sáu chở dạo quanh một vòng!" }
     ]
   },
   {
@@ -576,8 +578,8 @@ function joinWorld(nickname, socketId, options = {}) {
   const rMeta = ensureRoom(roomId);
   rMeta.emptySince = null;
 
-  const spawnX = Number(((Math.random() - 0.5) * 5).toFixed(2));
-  const spawnZ = Number((5.5 + Math.random() * 2).toFixed(2));
+  const spawnX = Number(((Math.random() - 0.5) * 2.0).toFixed(2));
+  const spawnZ = Number((18.5 + Math.random() * 1.5).toFixed(2));
 
   players[nickname] = {
     nickname,

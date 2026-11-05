@@ -27,7 +27,7 @@ let myPlayer = {
   inventory: {},
   stalls: [],
   quests: [],
-  pos: { x: 0, z: 6 },
+  pos: { x: 0, z: 20 },
   y: 0,
   vy: 0,
   rot: 0,
@@ -86,20 +86,16 @@ const VIETNAMESE_MARKET_CRIES = [
 ];
 
 const JUMP_PADS = [
-  // 4 Đệm Nhún Hội Chợ Trung Tâm
-  { x: -6.5, z: -6.5, color: 0xef4444 },
-  { x:  6.5, z: -6.5, color: 0xf59e0b },
-  { x: -6.5, z:  6.5, color: 0x10b981 },
-  { x:  6.5, z:  6.5, color: 0x3b82f6 },
-  // 8 Đệm Nhún Liên Hoàn Đại Lộ & Khu Vui Chơi Mở Rộng
-  { x: -20.5, z: -16.0, color: 0xec4899 },
-  { x:  20.5, z: -15.0, color: 0x8b5cf6 },
-  { x: -18.0, z:  14.0, color: 0x06b6d4 },
-  { x:  18.0, z:  14.0, color: 0xf97316 },
-  { x:   0.0, z: -38.0, color: 0x14b8a6 },
-  { x: -38.0, z:   0.0, color: 0xeab308 },
-  { x:  38.0, z:   0.0, color: 0xa855f7 },
-  { x:   0.0, z:  72.0, color: 0xf43f5e },
+  // 4 Đệm Nhún Khu Vui Chơi Công Viên Ven Sông (x = 20-25, z = 24-28)
+  { x:  20.0, z: 24.0, color: 0xef4444 },
+  { x:  24.5, z: 24.0, color: 0xf59e0b },
+  { x:  20.0, z: 28.5, color: 0x10b981 },
+  { x:  24.5, z: 28.5, color: 0x3b82f6 },
+  // 4 Đệm Nhún Khu Thể Thao & Lễ Hội Dân Gian (Đá Cầu & Bầu Cua)
+  { x: -54.0, z: -12.0, color: 0xec4899 },
+  { x: -54.0, z: -18.0, color: 0xeab308 },
+  { x:  54.0, z: -12.0, color: 0x8b5cf6 },
+  { x:  54.0, z: -18.0, color: 0x06b6d4 },
   // 8 Đệm Nhún Vùng Ngoại Ô & Vành Đai 20x
   { x: -135.0, z: -115.0, color: 0x38bdf8 },
   { x:  135.0, z: -115.0, color: 0xf43f5e },

@@ -36,7 +36,7 @@ function startOfflineDemo(nick) {
     ]
   };
   myPlayer.roomId = 'demo-tour';
-  myPlayer.pos = { x: 0, z: 6 };
+  myPlayer.pos = { x: 0, z: 19 };
 
   const roomLabel = document.getElementById('current-room-label');
   if (roomLabel) {
@@ -66,17 +66,17 @@ function startOfflineDemo(nick) {
     camera.fov = isPortrait ? 60 : 48;
     camera.updateProjectionMatrix();
     controls.target.set(myPlayer.pos.x, 1.1, myPlayer.pos.z);
-    camera.position.set(myPlayer.pos.x, 3.8, myPlayer.pos.z + 5.8);
+    camera.position.set(myPlayer.pos.x, 4.6, myPlayer.pos.z + 6.8);
     controls.update();
   }
 
   const demoStalls = [
-    { id: 'stall-1', position: { x: -14, z: -10 }, rotation: 0, owner: null, name: 'Sạp Nông Sản Chợ Quê', level: 1, goods: { 'RauMuong': { count: 20, price: 100 } } },
-    { id: 'stall-2', position: { x:  14, z: -10 }, rotation: 0, owner: null, name: 'Sạp Trái Cây Miền Tây', level: 1, goods: { 'ThanhLong': { count: 15, price: 150 } } },
-    { id: 'stall-3', position: { x: -14, z:  10 }, rotation: Math.PI, owner: null, name: 'Sạp Đồ Khô & Bánh Mứt', level: 1, goods: {} },
-    { id: 'stall-4', position: { x:  14, z:  10 }, rotation: Math.PI, owner: null, name: 'Sạp Gốm Sứ Bát Tràng', level: 1, goods: {} },
-    { id: 'stall-5', position: { x: -22, z:   0 }, rotation: Math.PI / 2, owner: null, name: 'Quán Trà Sen & Cà Phê', level: 1, goods: {} },
-    { id: 'stall-6', position: { x:  22, z:   0 }, rotation: -Math.PI / 2, owner: null, name: 'Sạp Hoa Tươi & Thủ Công', level: 1, goods: {} }
+    { id: 'stall-1', position: { x: -15, z: -25 }, rotation: 0, owner: null, name: 'Sạp Trái Cây Miền Tây', level: 1, goods: { 'ThanhLong': { count: 20, price: 100 } } },
+    { id: 'stall-2', position: { x:  15, z: -25 }, rotation: 0, owner: null, name: 'Quán Cà Phê Vợt & Nước Mía', level: 1, goods: { 'CaPheSua': { count: 15, price: 150 } } },
+    { id: 'stall-3', position: { x: -15, z: -30 }, rotation: 0, owner: null, name: 'Tiệm Phở Bò & Bánh Mì', level: 1, goods: {} },
+    { id: 'stall-4', position: { x:  15, z: -30 }, rotation: 0, owner: null, name: 'Hàng Nón Lá & Hoa Xuân', level: 1, goods: {} },
+    { id: 'stall-5', position: { x: -15, z: -35 }, rotation: 0, owner: null, name: 'Bách Hóa Tổng Hợp Phố Chợ', level: 1, goods: {} },
+    { id: 'stall-6', position: { x:  15, z: -35 }, rotation: 0, owner: null, name: 'Tiệm Trầm Hương & Ngọc', level: 1, goods: {} }
   ];
   if (typeof syncStalls === 'function') syncStalls(demoStalls);
 
@@ -240,6 +240,12 @@ function joinGame() {
         }
 
         myPlayer.nickname = res.player.nickname;
+        if (res.player.pos) {
+          myPlayer.pos = { x: res.player.pos.x, z: res.player.pos.z };
+        }
+        if (typeof res.player.rot === 'number') {
+          myPlayer.rot = res.player.rot;
+        }
         myPlayer.money = res.player.money;
         myPlayer.inventory = res.player.inventory;
         myPlayer.stalls = res.player.stalls;
@@ -284,7 +290,7 @@ function joinGame() {
           camera.fov = isPortrait ? 60 : 48;
           camera.updateProjectionMatrix();
           controls.target.set(myPlayer.pos.x, 1.1, myPlayer.pos.z);
-          camera.position.set(myPlayer.pos.x, 3.8, myPlayer.pos.z + 5.8);
+          camera.position.set(myPlayer.pos.x, 4.6, myPlayer.pos.z + 6.8);
           controls.update();
         }
 

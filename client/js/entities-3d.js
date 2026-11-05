@@ -80,12 +80,12 @@ function initPetDog() {
   tailGroup.add(tail);
   dogGroup.add(tailGroup);
 
-  const nameSprite = createTextSprite("🐕 Cún Vàng", "#fef08a", "rgba(185, 28, 28, 0.85)");
-  nameSprite.position.set(0, 1.35, 0);
-  nameSprite.scale.set(1.8, 0.42, 1);
+  const nameSprite = createTextSprite("🐕 Cún Vàng", "#fef08a", "rgba(15, 23, 42, 0.65)");
+  nameSprite.position.set(0, 0.75, 0);
+  nameSprite.scale.set(1.1, 0.28, 1);
   dogGroup.add(nameSprite);
 
-  dogGroup.position.set(myPlayer.pos.x + 1.2, 0, myPlayer.pos.z + 1.2);
+  dogGroup.position.set(myPlayer.pos.x + 1.8, 0, myPlayer.pos.z + 1.2);
   scene.add(dogGroup);
 
   petDogMesh = {
@@ -1386,7 +1386,8 @@ function createCharacterMesh(customOrColor = 0xf59e0b, nickname = "Bà con") {
   bodyRoot.add(legRGroup);
 
   const nameSprite = createTextSprite(nickname, "#fef08a");
-  nameSprite.position.set(0, 2.2, 0);
+  nameSprite.position.set(0, 2.1, 0);
+  nameSprite.scale.set(1.5, 0.32, 1);
   group.add(nameSprite);
 
   let auraRing = null;
@@ -1699,7 +1700,8 @@ function syncCustomers(customersList) {
       entry.lastBubble = newBubble;
       entry.char.group.remove(entry.bubbleSprite);
       entry.bubbleSprite = createTextSprite(newBubble, "#fef08a", "rgba(185, 28, 28, 0.95)");
-      entry.bubbleSprite.position.set(0, 2.75, 0);
+      entry.bubbleSprite.position.set(0, 2.7, 0);
+      entry.bubbleSprite.scale.set(2.0, 0.42, 1);
       entry.bubbleSprite.visible = true;
       entry.char.group.add(entry.bubbleSprite);
     } else if (!newBubble) {
