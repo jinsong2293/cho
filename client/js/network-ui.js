@@ -1055,16 +1055,25 @@ function renderStallModalContent(s) {
   let html = '';
 
   if (!s.owner) {
+    // Sạp đầu tiên MIỄN PHÍ cho tân thủ (khớp với server rentStall)
+    const isStarterFree = (!myPlayer.stalls || myPlayer.stalls.length === 0) && !myPlayer.tutorialCompleted;
+    const stallCost = isStarterFree ? 0 : gameConstants.STALL_COST;
     html = `
       <div style="text-align:center; padding:14px;">
         <p style="font-size:14.5px; margin-bottom:10px;">Sạp hàng vị trí đắc địa này đang chờ bà con thuê mở tiệm!</p>
-        <div style="font-size:21px; font-weight:800; color:var(--gold); margin-bottom:14px;">
-          Giá thuê sạp: ${gameConstants.STALL_COST.toLocaleString()}đ
-        </div>
+        ${
+          isStarterFree
+            ? `<div style="background:rgba(16,185,129,0.18); border:1px solid #10b981; border-radius:12px; padding:10px; margin-bottom:14px;">
+                <span style="font-size:15px; font-weight:800; color:#a7f3d0;">🎁 Bác Ba tặng sạp khởi nghiệp MIỄN PHÍ (0đ)!</span>
+              </div>`
+            : `<div style="font-size:21px; font-weight:800; color:var(--gold); margin-bottom:14px;">
+                Giá thuê sạp: ${stallCost.toLocaleString()}đ
+              </div>`
+        }
         <input type="text" id="stall-custom-name" class="join-input" placeholder="Đặt bảng tên cho sạp của bạn..." value="${safeStallName}" style="max-width:340px; margin:0 auto 14px;">
         <div>
-          <button class="join-btn" style="max-width:260px; margin:0 auto;" onclick="rentStall('${safeStallId}')" ${myPlayer.money < gameConstants.STALL_COST ? 'disabled' : ''}>
-            🏮 Mở Sạp Khai Trương
+          <button class="join-btn" style="max-width:260px; margin:0 auto;" onclick="rentStall('${safeStallId}')" ${myPlayer.money < stallCost ? 'disabled' : ''}>
+            🏮 ${isStarterFree ? 'Nhận Sạp & Mở Khai Trương (0đ)' : 'Mở Sạp Khai Trương'}
           </button>
         </div>
       </div>

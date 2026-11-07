@@ -268,9 +268,11 @@
         if (typeof playSound === "function") playSound("fanfare");
         if (res.tutorialCompleted) {
           tutorialCompleted = true;
+          myPlayer.tutorialCompleted = true;
           if (typeof showToast === "function") showToast("🎉 XUẤT SẮC! Bạn đã hoàn thành Khóa Tân Thủ và chính thức là Tiểu Thương Phố Chợ!");
         } else {
           tutorialStep = res.nextStep;
+          myPlayer.tutorialStep = res.nextStep; // đồng bộ để các bẫy auto-advance đọc đúng bước
           if (typeof showToast === "function") showToast(`🏮 [Tân thủ ${res.nextStep}/4]: ${currentTutorialConfig() ? currentTutorialConfig().title : ""}`);
         }
         renderTutorialTracker();

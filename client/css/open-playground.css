@@ -997,14 +997,14 @@ body.mobile-mode #mobile-controls-layer {
   border-color: #fef08a;
 }
 
-/* Modals */
+/* Modals — z-index 600: modal luôn nằm TRÊN toast (350) và banner sự kiện (120) */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(9, 13, 22, 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 200;
+  z-index: 600;
   display: none;
   align-items: center;
   justify-content: center;
