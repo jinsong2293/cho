@@ -25,7 +25,11 @@ const fs = require("fs");
 const http = require("http");
 const { io } = require("socket.io-client");
 
-const TEST_PORT = 3457;
+// Port: tôn trọng TEST_PORT từ môi trường (npm test truyền vào), mặc định port ngẫu nhiên
+// để không bao giờ va chạm với server dev hoặc server của npm test đang chạy sẵn
+const TEST_PORT = process.env.TEST_PORT
+  ? Number(process.env.TEST_PORT)
+  : 34000 + Math.floor(Math.random() * 20000);
 const BASE_URL = `http://127.0.0.1:${TEST_PORT}`;
 const TEST_DB = path.join(__dirname, "..", "test-smoke-world.db");
 
@@ -87,17 +91,33 @@ function emitAck(socket, event, payload, timeoutMs = 4000) {
 
 async function runSmokeTests() {
   console.log("🏮 Bắt đầu chạy Smoke Test cho Chợ Thị Trấn Việt Nam 3D...");
-  cleanupDb();
 
-  const serverProc = spawn(process.execPath, [path.join(__dirname, "..", "server", "index.js")], {
-    env: {
-      ...process.env,
-      PORT: String(TEST_PORT),
-      DB_PATH: TEST_DB,
-      ADMIN_KEY: "test-admin-secret"
-    },
-    stdio: ["ignore", "pipe", "pipe"]
+  // Nếu đã có server chạy sẵn trên TEST_PORT (npm test khởi động trước) thì tái sử dụng,
+  // chỉ tự spawn server + DB test riêng khi port còn trống
+  let serverProc = null;
+  const portBusy = await new Promise((resolve) => {
+    const probe = http.get(`${BASE_URL}/health`, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    probe.on("error", () => resolve(false));
+    probe.setTimeout(1200, () => { probe.destroy(); resolve(false); });
   });
+
+  if (portBusy) {
+    console.log(`  ✓ Tái sử dụng server đang chạy sẵn tại cổng ${TEST_PORT}`);
+  } else {
+    cleanupDb();
+    serverProc = spawn(process.execPath, [path.join(__dirname, "..", "server", "index.js")], {
+      env: {
+        ...process.env,
+        PORT: String(TEST_PORT),
+        DB_PATH: TEST_DB,
+        ADMIN_KEY: "test-admin-secret"
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+  }
 
   let clientA = null;
   let clientB = null;
@@ -257,7 +277,7 @@ async function runSmokeTests() {
     if (clientA) clientA.disconnect();
     if (clientB) clientB.disconnect();
     if (clientAttacker) clientAttacker.disconnect();
-    serverProc.kill("SIGTERM");
+    if (serverProc) serverProc.kill("SIGTERM"); // chỉ kill server do test tự spawn
     cleanupDb();
   }
 }

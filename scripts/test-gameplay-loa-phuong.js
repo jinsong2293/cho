@@ -107,13 +107,15 @@ async function runGameplayTest() {
 
   // Thử bấm nút ✕ trên Banner để đóng
   console.log('👉 Thử bấm nút [✕] đóng banner Loa Phường...');
-  await page.$eval('#event-banner .toast-close', (el) => el.click());
-  await page.waitForTimeout(300);
-
+  // Kiểm tra NGUYÊN TỬ trong 1 lần evaluate: bấm + đọc trạng thái ngay lập tức.
+  // Nếu dùng waitForTimeout(300) thì sự kiện market_event rotate giữa chừng (banner re-show
+  // HỢP PHÁP vì có sự kiện mới) sẽ làm test nhầm nút ✕ bị hỏng — flaky.
   const isClosed = await page.evaluate(() => {
+    const btn = document.querySelector('#event-banner .toast-close');
+    if (!btn) return false;
+    btn.click();
     const banner = document.getElementById('event-banner');
-    const style = window.getComputedStyle(banner);
-    return style.display === 'none' || !banner.classList.contains('show');
+    return banner && !banner.classList.contains('show');
   });
   console.log(`Trạng thái sau khi bấm đóng: ${isClosed ? 'ĐÃ ĐÓNG HOÀN TOÀN ✅' : 'CHƯA ĐÓNG ❌'}`);
   assert.ok(isClosed, 'Bấm nút ✕ phải đóng banner ngay lập tức');
