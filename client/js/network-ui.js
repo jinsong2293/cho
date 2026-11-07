@@ -259,6 +259,9 @@ function joinGame() {
         myPlayer.collection = res.player.collection || {};
         myPlayer.houseConfig = res.player.houseConfig || { privacy: 'public', guestbook: [] };
         myPlayer.roomId = res.roomId || 'public-1';
+        myPlayer.tutorialCompleted = Boolean(res.player.tutorialCompleted);
+        myPlayer.tutorialStep = Number(res.player.tutorialStep) || 1;
+        myPlayer.exp = Number(res.player.exp) || 0;
 
         const roomLabel = document.getElementById('current-room-label');
         if (roomLabel) {
@@ -274,6 +277,12 @@ function joinGame() {
         }
 
         gameConstants = res.constants;
+
+        // ECONOMY 2.0: khởi tạo tín hiệu chợ, cấp độ & tutorial sau khi join
+        if (window.EconomyUI) {
+          window.EconomyUI.onJoined();
+          if (res.snapshot.marketSignals) window.EconomyUI.updateMarketSignals(res.snapshot.marketSignals);
+        }
 
         document.getElementById('join-screen').classList.remove('active');
 
@@ -456,6 +465,10 @@ function joinGame() {
   });
 
   socket.on('world_event', (ev) => {
+    // ECONOMY 2.0: sự kiện trả giá/kết sổ/cấp độ do economy-ui xử lý riêng (cả sự kiện riêng tư)
+    if (window.EconomyUI && window.EconomyUI.handleWorldEvent(ev) && ev.type !== 'customer_buy') {
+      return;
+    }
     if (ev.type === 'customer_buy') {
       const isMyStall = ev.owner === myPlayer.nickname;
       addChatMessage(
@@ -647,6 +660,7 @@ function joinGame() {
     syncCustomers(data.customers);
     if (data.supplyDrop) worldState.supplyDrop = data.supplyDrop;
     if (data.marketEvent) updateMarketEventBanner(data.marketEvent);
+    if (data.marketSignals && window.EconomyUI) window.EconomyUI.updateMarketSignals(data.marketSignals);
     if (data.bauCua) {
       worldState.bauCua = data.bauCua;
       renderBauCuaBoard();
@@ -686,6 +700,8 @@ function joinGame() {
     if (patch.affinity !== undefined) myPlayer.affinity = patch.affinity;
     if (patch.socialTitle !== undefined) myPlayer.socialTitle = patch.socialTitle;
     if (patch.collection !== undefined) myPlayer.collection = patch.collection;
+    if (patch.exp !== undefined) myPlayer.exp = patch.exp;
+    if (window.EconomyUI) window.EconomyUI.onPlayerStatsSynced(patch);
     if (patch.houseConfig !== undefined) {
       myPlayer.houseConfig = patch.houseConfig;
       if (typeof window.updatePlayerHouse3D === 'function') {
@@ -1077,6 +1093,12 @@ function renderStallModalContent(s) {
         </div>
       </div>
 
+      <!-- ECONOMY 2.0: Panel Đặt Giá Sạp (slider 0.6x..1.8x, mở khóa Cấp 2) + nút Bày Toàn Bộ Hàng -->
+      ${window.EconomyUI ? window.EconomyUI.renderStallPricePanel(s) : ''}
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn-small" style="background:linear-gradient(135deg, #059669, #10b981); color:#fff; font-weight:800; padding:9px 14px;" onclick="stockAllGoods('${safeStallId}')">⚡ Bày Toàn Bộ Hàng (1-Chạm)</button>
+      </div>
+
       <h4 style="color:#fde68a; margin-top:6px; font-size:14px;">📦 Hàng Đang Bày Trên Mẹt Tre:</h4>
       <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px;">
     `;
@@ -1167,6 +1189,10 @@ function rentStall(stallId) {
     playSound('fanfare');
     showToast('🏮 Chúc mừng bạn đã khai trương sạp hàng mới!');
     closeModal('modal-stall');
+    // Tutorial 2.0 bước 1: nhận sạp xong
+    if (window.EconomyUI && myPlayer.tutorialStep === 1 && !myPlayer.tutorialCompleted) {
+      window.EconomyUI.advanceTutorialStep(1);
+    }
   });
 }
 
@@ -1181,6 +1207,31 @@ function stockGood(stallId, goodId, amount) {
     showToast('Đã bày hàng lên mẹt tre!');
   });
 }
+
+// Bày toàn bộ hàng 1-chạm (ECONOMY 2.0: tutorial bước 2 + EXP)
+function stockAllGoods(stallId) {
+  if (!socket) return;
+  socket.emit('stockAllGoods', { stallId }, (res) => {
+    if (!res || !res.ok) {
+      showToast((res && res.error) || 'Không có hàng để bày!');
+      return;
+    }
+    if (res.inventory) myPlayer.inventory = res.inventory;
+    if (res.quests) myPlayer.quests = res.quests;
+    if (res.stall) {
+      currentInteractingStall = res.stall;
+      renderStallModalContent(res.stall);
+    }
+    if (typeof updateHUD === 'function') updateHUD();
+    playSound('coin');
+    showToast(`📦 Đã bày ${res.totalStocked} món hàng lên mẹt tre!`);
+    // Tutorial 2.0 bước 2: bày hàng xong
+    if (window.EconomyUI && myPlayer.tutorialStep === 2 && !myPlayer.tutorialCompleted) {
+      window.EconomyUI.advanceTutorialStep(2);
+    }
+  });
+}
+window.stockAllGoods = stockAllGoods;
 
 function withdrawGood(stallId, goodId, amount) {
   if (!socket) return;

@@ -161,6 +161,55 @@ const GARAGE_CONFIG = {
   drinkDuration: 180,
 };
 
+// === ECONOMY 2.0 (port từ bản local): Tín Hiệu Chợ, Đặt Giá, Trả Giá, Kết Sổ, Cấp Độ ===
+// Tín Hiệu Chợ: cầu theo khung giờ trong ngày (timeOfDay 0..1)
+const MARKET_SIGNALS = [
+  { from: 0.0,  to: 0.25, phase: "Sáng Chợ",       note: "Sáng sớm người đi chợ mua trái cây tươi", boosts: { "Trái cây": 1.5, "Giải khát": 1.15 }, dips: { "Đặc sản": 0.8 } },
+  { from: 0.25, to: 0.5,  phase: "Trưa Nắng Gắt",  note: "Trưa nóng ai cũng tìm nước mía giải khát", boosts: { "Giải khát": 1.9, "Trái cây": 1.3 }, dips: { "Hoa tươi": 0.65 } },
+  { from: 0.5,  to: 0.7,  phase: "Chiều Chợ Tối",  note: "Chiều về các mẹ đi chợ nấu cơm tối",      boosts: { "Ẩm thực": 1.6 }, dips: { "Thủ công": 0.85 } },
+  { from: 0.7,  to: 0.88, phase: "Tối Phố Đêm",    note: "Tối đèn lồng lên, du khách mua đặc sản",  boosts: { "Ẩm thực": 1.8, "Hoa tươi": 1.35, "Đặc sản": 1.4 }, dips: { "Trái cây": 0.8 } },
+  { from: 0.88, to: 1.01, phase: "Khuya Về Đêm",   note: "Khuya rồi chỉ còn dân sành mua ngâm trầm", boosts: { "Đặc sản": 1.5 }, dips: { "Giải khát": 0.7 } },
+];
+
+// Minigame Trả Giá: khách NPC đòi bớt giá, chủ sạp quyết định trong 6 giây
+const HAGGLE_CONFIG = {
+  chance: 0.38,
+  windowMs: 6000,
+  acceptFactor: 0.88,
+  holdWinChance: 0.55,
+  holdWinFactor: 1.15,
+  timeoutFactor: 0.82,
+};
+
+// Chi phí sạp mỗi ngày chợ (money sink) + trần doanh thu theo cấp sạp (chặn vòi tiền)
+const STALL_RENT_PER_DAY = { 1: 300, 2: 600, 3: 1200 };
+const STAFF_WAGE_PER_DAY = 500;
+const STALL_EARN_CAP_PER_DAY = { 1: 20000, 2: 45000, 3: 90000 };
+
+// Cấp độ tiểu thương: EXP mở khóa năng lực thật, không chỉ danh hiệu
+const LEVEL_THRESHOLDS = [0, 1000, 3000, 6000, 10000, 15000, 22000, 30000, 40000, 55000, 75000, 100000];
+const LEVEL_TITLES = [
+  "Khách Thăm Chợ", "Tiểu Thương Mới", "Người Bán Hàng", "Thương Nhân Chăm",
+  "Phú Thương Trẻ", "Hào Phú Thị Trấn", "Thương Gia Tài Ba", "Phú Hộ Nổi Danh",
+  "Đại Phú Hộ", "Vương Thị Trấn", "Huyền Thoại Chợ", "Thần Thương Việt Nam",
+];
+const LEVEL_UNLOCKS = {
+  2: "Đặt Giá Sạp Tự Do (thanh trượt giá)",
+  3: "Nâng Sạp lên Cấp 2 (Kiot Khang Trang)",
+  4: "Thuê Phụ Quán bán hàng tự động",
+  5: "Nâng Sạp lên Cấp 3 (Tiệm Lớn Phố Cổ)",
+  6: "ƯU ĐÃI Trả Giá: cơ hội đòi giá cao hơn +10%",
+  8: "Gian Hàng Lễ Hội & ưu tiên vị trí chợ phiên",
+};
+
+// Tutorial 2.0: bán được món đầu tiên trong ~60 giây (target theo hàng sạp Bến Thành x=±15)
+const TUTORIAL_STEPS = [
+  { step: 1, id: "visit_stall", title: "Nhận Sạp Khởi Nghiệp", desc: "Bác Ba đã giữ sẵn một sạp miễn phí cho bạn ở dãy sạp Bến Thành", targetPos: { x: -15, z: -20 }, radius: 16.0, reward: 500, hint: "Đi tới dãy sạp phía Tây chợ rồi bấm nút Tương tác để nhận sạp miễn phí" },
+  { step: 2, id: "stock_stall", title: "Bày Hàng Lên Sạp", desc: "Mở Quản Lý Sạp và bày hàng lên mẹt tre", targetPos: { x: -15, z: -20 }, radius: 16.0, reward: 1000, hint: "Mở Quản Lý Sạp và bấm Bày Toàn Bộ Hàng" },
+  { step: 3, id: "first_sale", title: "Bán Món Đầu Tiên", desc: "Đứng cạnh sạp chờ khách NPC ghé mua", targetPos: { x: -15, z: -20 }, radius: 18.0, reward: 1200, hint: "Khách NPC đang rảo chợ — chờ chuông keng đầu tiên!" },
+  { step: 4, id: "explore_town", title: "Dạo Một Vòng Phố Chợ", desc: "Đi bộ khám phá quảng trường trung tâm", targetPos: { x: 0, z: 0 }, radius: 20.0, reward: 1500, hint: "Đi về quảng trường đài sen vàng giữa chợ để hoàn thành" },
+];
+
 // Vận tốc di chuyển
 const MOVE_SPEED = 6.0;
 
@@ -177,6 +226,15 @@ if (typeof module !== "undefined" && module.exports) {
     LOTTERY_CONFIG,
     BANK_CONFIG,
     GARAGE_CONFIG,
+    MARKET_SIGNALS,
+    HAGGLE_CONFIG,
+    STALL_RENT_PER_DAY,
+    STAFF_WAGE_PER_DAY,
+    STALL_EARN_CAP_PER_DAY,
+    LEVEL_THRESHOLDS,
+    LEVEL_TITLES,
+    LEVEL_UNLOCKS,
+    TUTORIAL_STEPS,
     DAY_LENGTH,
     TICK_RATE,
     MAX_PLAYERS,
@@ -200,6 +258,15 @@ if (typeof window !== "undefined") {
     LOTTERY_CONFIG,
     BANK_CONFIG,
     GARAGE_CONFIG,
+    MARKET_SIGNALS,
+    HAGGLE_CONFIG,
+    STALL_RENT_PER_DAY,
+    STAFF_WAGE_PER_DAY,
+    STALL_EARN_CAP_PER_DAY,
+    LEVEL_THRESHOLDS,
+    LEVEL_TITLES,
+    LEVEL_UNLOCKS,
+    TUTORIAL_STEPS,
     DAY_LENGTH,
     TICK_RATE,
     MAX_PLAYERS,

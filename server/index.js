@@ -200,6 +200,9 @@ io.on("connection", (socket) => {
             socialTitle: player.socialTitle || "🌱 Bà Con Mới",
             collection: player.collection || [],
             houseConfig: player.houseConfig,
+            tutorialCompleted: Boolean(player.tutorialCompleted),
+            tutorialStep: player.tutorialStep || 1,
+            exp: player.exp || 0,
             recoveryCode: idRes.recoveryCode,
             isNewbie: player.isNewbie,
           },
@@ -214,6 +217,14 @@ io.on("connection", (socket) => {
             LOTTERY_CONFIG: constants.LOTTERY_CONFIG,
             BANK_CONFIG: constants.BANK_CONFIG,
             GARAGE_CONFIG: constants.GARAGE_CONFIG,
+            QUESTS_CONFIG: constants.QUESTS_CONFIG,
+            TUTORIAL_STEPS: constants.TUTORIAL_STEPS,
+            LEVEL_UNLOCKS: constants.LEVEL_UNLOCKS,
+            LEVEL_THRESHOLDS: constants.LEVEL_THRESHOLDS,
+            LEVEL_TITLES: constants.LEVEL_TITLES,
+            HAGGLE_CONFIG: constants.HAGGLE_CONFIG,
+            STALL_RENT_PER_DAY: constants.STALL_RENT_PER_DAY,
+            STAFF_WAGE_PER_DAY: constants.STAFF_WAGE_PER_DAY,
           },
           snapshot,
         });
@@ -832,6 +843,17 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("stockAllGoods", ({ stallId }, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const result = world.stockAllGoods(userNickname, stallId);
+    if (ack) ack(result);
+    if (result.ok) {
+      io.to("world").emit("stall_updated", result.stall);
+      const p = world.players[userNickname];
+      if (p) socket.emit("sync_player_stats", { inventory: p.inventory, quests: p.quests, exp: p.exp || 0 });
+    }
+  });
+
   socket.on("withdrawGood", ({ stallId, goodId, amount }, ack) => {
     if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
     const result = world.withdrawGood(userNickname, stallId, goodId, amount || 1);
@@ -986,6 +1008,56 @@ io.on("connection", (socket) => {
     }
   });
 
+  // === ECONOMY 2.0: ĐẶT GIÁ SẠP, TRẢ GIÁ VỚI KHÁCH, CẤP ĐỘ, TUTORIAL ===
+  socket.on("setStallPrice", ({ stallId, priceFactor } = {}, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const rateCheck = limiter.checkAction();
+    if (!rateCheck.allowed) {
+      socket.emit("rate_limited", { message: rateCheck.reason });
+      return ack && ack({ ok: false, error: rateCheck.reason });
+    }
+    const result = world.setStallPrice(userNickname, stallId, priceFactor);
+    if (ack) ack(result);
+  });
+
+  socket.on("haggle_respond", ({ haggleId, choice } = {}, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const result = world.resolveHaggle(userNickname, haggleId, choice);
+    if (ack) ack(result);
+    if (result.ok) {
+      const p = world.players[userNickname];
+      if (p) socket.emit("sync_player_stats", { money: p.money, quests: p.quests, exp: p.exp || 0 });
+    }
+  });
+
+  socket.on("request_level_info", () => {
+    if (!userNickname) return;
+    const p = world.players[userNickname];
+    if (!p) return;
+    socket.emit("level_info", world.calculateLevel(p.exp || 0));
+  });
+
+  socket.on("completeTutorialStep", ({ step }, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const result = world.completeTutorialStep(userNickname, step);
+    if (ack) ack(result);
+    if (result.ok) {
+      socket.emit("sync_player_stats", {
+        money: result.money,
+        tutorialCompleted: result.tutorialCompleted,
+      });
+    }
+  });
+
+  socket.on("skipTutorial", (_, ack) => {
+    if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
+    const result = world.skipTutorial(userNickname);
+    if (ack) ack(result);
+    if (result.ok) {
+      socket.emit("sync_player_stats", { tutorialCompleted: true });
+    }
+  });
+
   socket.on("createCommunityEvent", (data, ack) => {
     if (!userNickname) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
     const result = world.createCommunityEvent(userNickname, data);
@@ -1092,6 +1164,19 @@ function tick() {
 
   const events = world.popEvents();
   events.forEach((ev) => {
+    // Sự kiện riêng tư (trả giá, kết sổ...) chỉ gửi đúng người nhận, không loa cả phòng
+    if (ev.target && world.players[ev.target]) {
+      const tp = world.players[ev.target];
+      const tSocket = io.sockets.sockets.get(tp.socketId);
+      if (tSocket) {
+        tSocket.emit("world_event", ev);
+        if (ev.type === "haggle_result" || ev.type === "new_day_summary") {
+          tSocket.emit("sync_player_stats", { money: tp.money, quests: tp.quests, exp: tp.exp || 0 });
+        }
+      }
+      return;
+    }
+
     const targetRoom = ev.roomId || "world";
     io.to(targetRoom).emit("world_event", ev);
 
@@ -1107,6 +1192,7 @@ function tick() {
           ownerSocket.emit("sync_player_stats", {
             money: ownerPlayer.money,
             quests: ownerPlayer.quests,
+            exp: ownerPlayer.exp || 0,
           });
         }
       }
@@ -1186,6 +1272,7 @@ function tick() {
         shuttlecock: snap.shuttlecock,
         communityEvents: snap.communityEvents,
         day: snap.day,
+        marketSignals: snap.marketSignals,
         timeOfDay: snap.timeOfDay,
         leaderboard: snap.leaderboard,
       });

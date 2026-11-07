@@ -19,6 +19,14 @@ const {
   LOTTERY_CONFIG,
   BANK_CONFIG,
   GARAGE_CONFIG,
+  MARKET_SIGNALS,
+  HAGGLE_CONFIG,
+  STALL_RENT_PER_DAY,
+  STAFF_WAGE_PER_DAY,
+  STALL_EARN_CAP_PER_DAY,
+  LEVEL_THRESHOLDS,
+  LEVEL_TITLES,
+  LEVEL_UNLOCKS,
 } = require("../shared/constants");
 const {
   BOUNDS,
@@ -35,6 +43,8 @@ const {
   progressPlayerQuest,
   getLeaderboard,
   getSocialTitle,
+  loadStalls,
+  saveStall,
 } = require("./persistence");
 const { sanitizeText, sanitizeNickname } = require("./moderation");
 const { getWeatherState, WEATHER_STATES } = require("../shared/weather");
@@ -184,19 +194,26 @@ const INITIAL_STALL_DEFS = [
 ];
 
 function initStalls() {
+  // Lưu bền: phục hồi sạp từ SQLite (chủ sạp, hàng, doanh thu, cấp, giá) — hết cảnh restart mất sạp
+  const persisted = new Map(loadStalls().map((stall) => [stall.id, stall]));
   INITIAL_STALL_DEFS.forEach((def) => {
+    const saved = persisted.get(def.id);
     stalls[def.id] = {
       id: def.id,
-      name: def.name,
-      owner: null,
-      goods: { ...def.goods },
-      earnings: 0,
-      level: 1,
-      hasStaff: false,
+      name: saved ? saved.name : def.name,
+      owner: saved ? saved.owner : null,
+      goods: saved ? saved.goods : { ...def.goods },
+      earnings: saved ? saved.earnings : 0,
+      level: saved ? saved.level : 1,
+      hasStaff: saved ? saved.hasStaff : false,
+      priceFactor: saved ? saved.priceFactor : 1,
+      dailyEarnings: 0,
+      dailyEarningsDay: 0,
       position: { x: def.x, z: def.z },
       color: def.color,
       category: def.category,
     };
+    if (!saved) saveStall(stalls[def.id]);
   });
 }
 initStalls();
@@ -372,6 +389,18 @@ const CUSTOMER_DIALOGS = [
   "Sân Làng đang thiếu 1 người kéo co nè, ai ra phụ một tay không?",
   "Tối nay lên Phố Ẩm Thực Đêm nghe hát loa kẹo kéo vui lắm!",
 ];
+
+// Thoại theo thời tiết (người bán & khách đều "sống" theo trời)
+const CUSTOMER_WEATHER_DIALOGS = {
+  heatwave: [
+    "Nóng đỉnh điểm! Vào đây ngay một ly giải khát mát băng kệ!",
+    "Trời 40 độ mà bà con ơi, mía ép lạnh đâu ra đây hết!",
+  ],
+  rain: [
+    "Mưa rào mát quá, mùa này bún đậu bán đắt hàng lắm!",
+    "Trời mưa mà chợ vẫn tấp nập, phở nóng bốc khói ngút ngàn!",
+  ],
+};
 
 function initCustomers() {
   customers.length = 0;
@@ -612,6 +641,10 @@ function joinWorld(nickname, socketId, options = {}) {
     mutedUntil: saved.mutedUntil || 0,
     bannedUntil: saved.bannedUntil || 0,
     tutorialCompleted: saved.tutorialCompleted || false,
+    tutorialStep: deriveTutorialStep(saved),
+    exp: saved.exp || 0,
+    activityRewards: saved.activityRewards || {},
+    todayEarnings: 0,
     joinedAt: Date.now(),
     isNewbie: isFirstJoin || (saved.affinity || 0) < 15,
     greetedBy: [],
@@ -621,6 +654,13 @@ function joinWorld(nickname, socketId, options = {}) {
 
   progressPlayerQuest(nickname, "join_town", 1);
   return players[nickname];
+}
+
+// tutorialStep lưu DB: suy ra từ tiến độ thật khi rejoin để người chơi không bị kẹt lại bước cũ
+function deriveTutorialStep(saved) {
+  if (saved.tutorialCompleted) return 5;
+  if (Array.isArray(saved.stalls) && saved.stalls.length > 0) return 3;
+  return Math.max(1, Number(saved.tutorialStep) || 1);
 }
 
 function leaveWorld(nickname) {
@@ -642,6 +682,9 @@ function leaveWorld(nickname) {
       collection: p.collection,
       houseConfig: p.houseConfig,
       tutorialCompleted: p.tutorialCompleted,
+      tutorialStep: p.tutorialStep,
+      exp: p.exp,
+      activityRewards: p.activityRewards,
     });
     delete players[nickname];
 
@@ -825,19 +868,39 @@ function updateWorld(dt) {
       if (c.idleTimer <= 0) {
         c.waypointIndex = (c.waypointIndex + 1) % c.waypoints.length;
         const nextWp = c.waypoints[c.waypointIndex];
-        c.targetX = nextWp.x;
-        c.targetZ = nextWp.z;
-        c.state = "walking";
 
-        // Khách mua sắm tại chợ trung tâm sẽ kiểm tra sạp hàng gần đó để mua hàng
-        if (c.role === "shopper") {
-          const nearStall = Object.values(stalls).find((s) =>
-            Math.hypot(s.position.x - nextWp.x, s.position.z - nextWp.z) < 3.2 &&
+        // ECONOMY 2.0: khách mua sắm chủ động ghé SẠP CÓ HÀNG (65%) thay vì chỉ đi waypoint
+        // cố định — trước đây không waypoint nào gần hàng sạp nên NPC không bao giờ mua hàng
+        let wentShopping = false;
+        if (c.role === "shopper" && Math.random() < 0.65) {
+          const stocked = Object.values(stalls).filter((s) =>
             Object.values(s.goods).some((qty) => qty > 0)
           );
-          if (nearStall && Math.random() < 0.8) {
-            c.targetStallId = nearStall.id;
+          if (stocked.length > 0) {
+            const chosen = stocked[Math.floor(Math.random() * stocked.length)];
+            c.targetX = chosen.position.x + (Math.random() - 0.5) * 2.4;
+            c.targetZ = chosen.position.z + 2.0;
+            c.targetStallId = chosen.id;
             c.state = "shopping";
+            wentShopping = true;
+          }
+        }
+
+        if (!wentShopping) {
+          c.targetX = nextWp.x;
+          c.targetZ = nextWp.z;
+          c.state = "walking";
+
+          // Khách mua sắm tại chợ trung tâm sẽ kiểm tra sạp hàng gần đó để mua hàng
+          if (c.role === "shopper") {
+            const nearStall = Object.values(stalls).find((s) =>
+              Math.hypot(s.position.x - nextWp.x, s.position.z - nextWp.z) < 3.2 &&
+              Object.values(s.goods).some((qty) => qty > 0)
+            );
+            if (nearStall && Math.random() < 0.8) {
+              c.targetStallId = nearStall.id;
+              c.state = "shopping";
+            }
           }
         }
       }
@@ -950,6 +1013,14 @@ function updateWorld(dt) {
       });
     }
   }
+
+  // ECONOMY 2.0: tick kèo trả giá hết hạn + chuyển ngày chợ (thu thuê sạp, kết sổ)
+  tickPendingHaggles(now);
+  const currentDay = getDay();
+  if (currentDay !== lastWorldDay) {
+    lastWorldDay = currentDay;
+    chargeDailyCosts();
+  }
 }
 
 function getEffectiveSellPrice(goodDef, stall) {
@@ -965,6 +1036,7 @@ function getEffectiveSellPrice(goodDef, stall) {
     }
   }
   if (stall) {
+    if (stall.priceFactor !== undefined) earn = Math.round(earn * stall.priceFactor);
     if (stall.level === 2) earn = Math.round(earn * 1.15);
     if (stall.level >= 3) earn = Math.round(earn * 1.35);
     if (stall.hasStaff) earn = Math.round(earn * 1.15);
@@ -977,39 +1049,169 @@ function getEffectiveBuyPrice(goodDef) {
   return Math.round(goodDef.buy * mult);
 }
 
-function handleCustomerPurchase(customer, stallId) {
-  const stall = stalls[stallId];
-  if (!stall) return;
+// === ECONOMY 2.0 (hợp nhất từ bản local): Tín Hiệu Chợ, Đặt Giá, Trả Giá, Kết Sổ, Cấp Độ ===
+function getMarketSignals() {
+  const tod = getTimeOfDay();
+  const signal = MARKET_SIGNALS.find((s) => tod >= s.from && tod < s.to) || MARKET_SIGNALS[0];
+  const boosts = { ...(signal.boosts || {}) };
+  if (currentMarketEvent && Array.isArray(currentMarketEvent.boostCategory)) {
+    (currentMarketEvent.boostCategory || []).forEach((cat) => {
+      boosts[cat] = Math.max(boosts[cat] || 1, 1.45);
+    });
+  }
+  return { phase: signal.phase, note: signal.note, boosts, dips: signal.dips || {} };
+}
 
-  const inStockIds = Object.keys(stall.goods).filter((k) => stall.goods[k] > 0);
-  if (inStockIds.length === 0) return;
+function getDemandMultiplier(category, signals) {
+  if (!signals) return 1;
+  const boost = (signals.boosts && signals.boosts[category]) || 1;
+  const dip = (signals.dips && signals.dips[category]) || 1;
+  return Math.max(0.35, boost * dip);
+}
 
-  const chosenId = inStockIds[Math.floor(Math.random() * inStockIds.length)];
-  const goodDef = GOODS.find((g) => g.id === chosenId);
-  if (!goodDef) return;
+// === Hệ thống Cấp Độ & EXP: mở khóa năng lực thật theo cấp ===
+function calculateLevel(exp) {
+  exp = Math.max(0, Number(exp) || 0);
+  let tier = 0;
+  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (exp >= LEVEL_THRESHOLDS[i]) {
+      tier = i;
+      break;
+    }
+  }
+  const isMax = tier >= LEVEL_THRESHOLDS.length - 1;
+  const currentExp = exp - LEVEL_THRESHOLDS[tier];
+  const nextExp = isMax ? 0 : LEVEL_THRESHOLDS[tier + 1] - LEVEL_THRESHOLDS[tier];
+  const progress = isMax ? 1 : nextExp > 0 ? currentExp / nextExp : 1;
+  return {
+    level: tier + 1,
+    title: LEVEL_TITLES[tier] || LEVEL_TITLES[LEVEL_TITLES.length - 1],
+    totalExp: exp,
+    currentExp,
+    nextExp,
+    progress: Math.min(1, progress),
+  };
+}
 
-  stall.goods[chosenId]--;
+function getPlayerLevel(nickname) {
+  const p = players[nickname];
+  if (!p) return 1;
+  return calculateLevel(p.exp || 0).level;
+}
 
-  const earn = getEffectiveSellPrice(goodDef, stall);
-  stall.earnings += earn;
+function addExp(nickname, amount, reason = "") {
+  const p = players[nickname];
+  if (!p) return null;
+  amount = Math.max(0, Math.floor(Number(amount) || 0));
+  const prevLevel = calculateLevel(p.exp || 0).level;
+  p.exp = Math.max(0, Math.floor(Number(p.exp) || 0)) + amount;
+  upsertPlayer(nickname, { exp: p.exp });
+  const newLevelInfo = calculateLevel(p.exp);
+  if (newLevelInfo.level > prevLevel) {
+    const unlock = LEVEL_UNLOCKS[newLevelInfo.level];
+    eventsQueue.push({
+      type: "level_up",
+      roomId: p.roomId,
+      nickname,
+      level: newLevelInfo.level,
+      title: newLevelInfo.title,
+      unlock: unlock || null,
+      message: `🎉 ${nickname} vừa lên Cấp ${newLevelInfo.level} — "${newLevelInfo.title}"!${unlock ? ` Mở khóa: ${unlock}` : ""}`,
+      time: Date.now(),
+    });
+  }
+  return { ...newLevelInfo, reason };
+}
 
-  if (stall.owner && players[stall.owner]) {
-    const owner = players[stall.owner];
-    owner.money += earn;
-    const q = progressPlayerQuest(stall.owner, "sell_customers", 1);
+// Trần thưởng hoạt động/ngày (chống farm vô hạn): fishing, mini-games...
+function grantActivityReward(nickname, key, requestedAmount, dailyCap = 5000) {
+  const p = players[nickname];
+  if (!p) return 0;
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const ledger = p.activityRewards && p.activityRewards.day === dayKey
+    ? p.activityRewards
+    : { day: dayKey, rewards: {} };
+  const earned = Math.max(0, Number(ledger.rewards && ledger.rewards[key]) || 0);
+  const reward = Math.max(0, Math.min(Math.floor(Number(requestedAmount) || 0), dailyCap - earned));
+  ledger.rewards = ledger.rewards || {};
+  ledger.rewards[key] = earned + reward;
+  p.activityRewards = ledger;
+  p.money += reward;
+  upsertPlayer(nickname, { money: p.money, activityRewards: ledger });
+  return reward;
+}
+
+// === MINIGAME TRẢ GIÁ: khách NPC đòi bớt giá, chủ sạp có 6 giây quyết định ===
+let haggleSeq = 0;
+const pendingHaggles = new Map();
+
+function pushHaggleRequest(haggle, stall, goodDef, qty, customer) {
+  const baseEarn = Math.round(getEffectiveSellPrice(goodDef, stall) * qty);
+  eventsQueue.push({
+    type: "haggle_request",
+    target: stall.owner,
+    roomId: haggle.roomId,
+    haggleId: haggle.id,
+    stallId: stall.id,
+    stallName: stall.name,
+    goodId: goodDef.id,
+    goodName: goodDef.name,
+    goodIcon: goodDef.icon,
+    qty,
+    customerName: customer.name,
+    askPrice: baseEarn,
+    acceptPrice: Math.round(baseEarn * HAGGLE_CONFIG.acceptFactor),
+    holdPrice: Math.round(baseEarn * HAGGLE_CONFIG.holdWinFactor),
+    timeoutPrice: Math.round(baseEarn * HAGGLE_CONFIG.timeoutFactor),
+    windowSec: Math.round(haggle.windowMs / 1000),
+    time: Date.now(),
+  });
+}
+
+function finalizeSale(stall, goodDef, qty, customer, earnMultiplier, meta = {}) {
+  // Trần doanh thu/sạp/ngày — nâng cấp sạp để nâng trần
+  const earnCap = STALL_EARN_CAP_PER_DAY[stall.level] || 20000;
+  const todayEarn = stall.dailyEarnings && stall.dailyEarningsDay === getDay() ? stall.dailyEarnings : 0;
+  if (todayEarn >= earnCap) {
+    customer.bubble = "Sạp này hôm nay đông khách quá! Mai quay lại nhé!";
+    customer.bubbleTimer = 4000;
+    return 0;
+  }
+
+  const signals = getMarketSignals();
+  const demandMult = getDemandMultiplier(goodDef.category, signals);
+  const effectiveBase = getEffectiveSellPrice(goodDef, stall);
+  const earn = Math.max(1, Math.round(effectiveBase * qty * earnMultiplier * (0.75 + demandMult * 0.25)));
+  const cappedEarn = Math.min(earn, Math.max(0, earnCap - todayEarn));
+  stall.goods[goodDef.id] = Math.max(0, (stall.goods[goodDef.id] || 0) - qty);
+  stall.earnings += cappedEarn;
+  stall.dailyEarnings = todayEarn + cappedEarn;
+  stall.dailyEarningsDay = getDay();
+  saveStall(stall);
+
+  const owner = stall.owner ? players[stall.owner] : null;
+  if (owner) {
+    owner.money += cappedEarn;
+    owner.todayEarnings = (owner.todayEarnings || 0) + cappedEarn;
+    const q = progressPlayerQuest(stall.owner, "sell_customers", qty);
     if (q) owner.quests = getPlayer(stall.owner).quests;
+    addExp(stall.owner, 35 * qty, meta.haggleWon ? "Chốt kèo đòi giá thành công" : "Bán hàng cho khách");
   } else if (stall.owner) {
     const dbOwner = getPlayer(stall.owner);
     if (dbOwner) {
-      upsertPlayer(stall.owner, { money: dbOwner.money + earn });
+      upsertPlayer(stall.owner, { money: dbOwner.money + cappedEarn });
+      addExp(stall.owner, 35 * qty, "Bán hàng tự động");
     }
   }
 
-  customer.bubble = CUSTOMER_DIALOGS[Math.floor(Math.random() * CUSTOMER_DIALOGS.length)];
+  customer.bubble = meta.haggleWon
+    ? "Trời đất, miệng dẻo quá! Thôi thì chịu ra tiền!"
+    : pickCustomerBubble(customer);
   customer.bubbleTimer = 4000;
 
   eventsQueue.push({
     type: "customer_buy",
+    customerId: customer.id || null,
     customerName: customer.name,
     stallId: stall.id,
     stallName: stall.name,
@@ -1017,10 +1219,205 @@ function handleCustomerPurchase(customer, stallId) {
     goodId: goodDef.id,
     goodName: goodDef.name,
     goodIcon: goodDef.icon,
-    price: earn,
+    price: cappedEarn,
     dialog: customer.bubble,
+    viaHaggle: Boolean(meta.viaHaggle),
+    haggleWon: Boolean(meta.haggleWon),
     time: Date.now(),
   });
+  return cappedEarn;
+}
+
+function resolveHaggleOutcome(haggleId, choice) {
+  const haggle = pendingHaggles.get(haggleId);
+  if (!haggle) return { ok: false, error: "Kèo trả giá đã hết hạn." };
+  pendingHaggles.delete(haggleId);
+
+  const stall = stalls[haggle.stallId];
+  const goodDef = GOODS.find((g) => g.id === haggle.goodId);
+  if (!stall || !goodDef) return { ok: false, error: "Sạp hoặc món hàng không còn tồn tại." };
+
+  const customer = customers.find((c) => c.name === haggle.customerName) ||
+    { name: haggle.customerName, bubble: "", bubbleTimer: 0 };
+
+  if (choice === "accept") {
+    const earn = finalizeSale(stall, goodDef, haggle.qty, customer, HAGGLE_CONFIG.acceptFactor, { viaHaggle: true });
+    eventsQueue.push({ type: "haggle_result", target: stall.owner, roomId: haggle.roomId, haggleId, outcome: "accepted", price: earn, message: `Chốt kèo bớt giá: bán được +${earn.toLocaleString()}đ!`, time: Date.now() });
+    return { ok: true, outcome: "accepted", price: earn };
+  }
+
+  if (choice === "hold") {
+    const bonusChance = HAGGLE_CONFIG.holdWinChance + (getPlayerLevel(stall.owner) >= 6 ? 0.1 : 0);
+    if (Math.random() < bonusChance) {
+      const earn = finalizeSale(stall, goodDef, haggle.qty, customer, HAGGLE_CONFIG.holdWinFactor, { viaHaggle: true, haggleWon: true });
+      eventsQueue.push({ type: "haggle_result", target: stall.owner, roomId: haggle.roomId, haggleId, outcome: "won", price: earn, message: `Khách phục miệng, chịu trả đắt: +${earn.toLocaleString()}đ! 🔥`, time: Date.now() });
+      return { ok: true, outcome: "won", price: earn };
+    }
+    customer.bubble = "Ối trời! Đắt thế thì thôi, qua sạp bên kia!";
+    customer.bubbleTimer = 4000;
+    eventsQueue.push({ type: "haggle_result", target: stall.owner, roomId: haggle.roomId, haggleId, outcome: "lost", price: 0, message: `Khách bực bỏ đi vì giá cao... Món ${goodDef.name} lỡ mất!`, time: Date.now() });
+    return { ok: true, outcome: "lost" };
+  }
+
+  // Hết giờ không trả lời: khách tự bớt sâu hơn rồi vẫn mua (phạt nhẹ)
+  const earn = finalizeSale(stall, goodDef, haggle.qty, customer, HAGGLE_CONFIG.timeoutFactor, { viaHaggle: true });
+  eventsQueue.push({ type: "haggle_result", target: stall.owner, roomId: haggle.roomId, haggleId, outcome: "timeout", price: earn, message: `Không trả lời, khách tự bớt sâu: chỉ bán được +${earn.toLocaleString()}đ.`, time: Date.now() });
+  return { ok: true, outcome: "timeout", price: earn };
+}
+
+function tickPendingHaggles(now) {
+  for (const [haggleId, haggle] of pendingHaggles.entries()) {
+    if (now - haggle.createdAt > haggle.windowMs) {
+      resolveHaggleOutcome(haggleId, "timeout");
+    }
+  }
+}
+
+function resolveHaggle(nickname, haggleId, choice) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+  const haggle = pendingHaggles.get(haggleId);
+  if (!haggle) return { ok: false, error: "Kèo trả giá đã hết hạn hoặc không tồn tại." };
+  if (haggle.owner !== nickname) return { ok: false, error: "Đây không phải kèo của sạp bạn!" };
+  return resolveHaggleOutcome(haggleId, choice === "hold" ? "hold" : "accept");
+}
+
+function setStallPrice(nickname, stallId, priceFactor) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+  const stall = stalls[stallId];
+  if (!stall) return { ok: false, error: "Sạp không tồn tại!" };
+  if (stall.owner !== nickname) return { ok: false, error: "Bạn không phải chủ sạp này!" };
+  if (getPlayerLevel(nickname) < 2) {
+    return { ok: false, error: "Đặt giá tự do mở khóa ở Cấp 2 — bán thêm vài đơn hàng nhé!", needLevel: 2 };
+  }
+  const factor = Math.min(1.8, Math.max(0.6, Number(priceFactor) || 1));
+  stall.priceFactor = Math.round(factor * 100) / 100;
+  saveStall(stall);
+  eventsQueue.push({
+    type: "stall_price_changed",
+    roomId: p.roomId,
+    stallId,
+    priceFactor: stall.priceFactor,
+    nickname,
+    time: Date.now(),
+  });
+  return { ok: true, stallId, priceFactor: stall.priceFactor };
+}
+
+// Kết sổ cuối ngày chợ: thu tiền thuê sạp + lương phụ quán, tổng kết hôm qua
+let lastWorldDay = getDay();
+function chargeDailyCosts() {
+  const day = getDay();
+  for (const stall of Object.values(stalls)) {
+    stall.dailyEarnings = 0;
+    stall.dailyEarningsDay = day;
+  }
+  for (const stall of Object.values(stalls)) {
+    if (!stall.owner) continue;
+    const owner = players[stall.owner];
+    if (!owner) continue;
+    const rent = STALL_RENT_PER_DAY[stall.level] || 300;
+    const wage = stall.hasStaff ? STAFF_WAGE_PER_DAY : 0;
+    const yesterdayEarnings = owner.todayEarnings || 0;
+    owner.money = Math.max(0, (owner.money || 0) - rent - wage);
+    owner.todayEarnings = 0;
+    upsertPlayer(owner.nickname, { money: owner.money });
+    eventsQueue.push({
+      type: "new_day_summary",
+      target: owner.nickname,
+      roomId: owner.roomId,
+      day,
+      rent,
+      wage,
+      yesterdayEarnings,
+      money: owner.money,
+      stallName: stall.name,
+      message: `🌅 Ngày ${day}: "${stall.name}" đóng tiền thuê ${rent.toLocaleString()}đ${wage ? ` + lương phụ quán ${wage.toLocaleString()}đ` : ""}. Hôm qua bán được ${yesterdayEarnings.toLocaleString()}đ.`,
+      time: Date.now(),
+    });
+  }
+}
+
+// Thoại NPC theo ngữ cảnh: giờ + thời tiết + vai trò (port từ bản local)
+function pickCustomerBubble(customer) {
+  const tod = getTimeOfDay();
+  const phase = tod < 0.25 ? "morning" : tod < 0.5 ? "noon" : tod < 0.7 ? "afternoon" : tod < 0.88 ? "evening" : "night";
+  const pools = [];
+  const weatherPool = currentMarketEvent && CUSTOMER_WEATHER_DIALOGS[currentMarketEvent.weather];
+  if (weatherPool && Math.random() < 0.45) pools.push(weatherPool);
+  pools.push(CUSTOMER_DIALOGS);
+  const pool = pools[Math.floor(Math.random() * pools.length)];
+  return pool[Math.floor(Math.random() * pool.length)] || CUSTOMER_DIALOGS[0];
+}
+
+function handleCustomerPurchase(customer, stallId) {
+  const stall = stalls[stallId];
+  if (!stall) return;
+
+  const inStockIds = Object.keys(stall.goods).filter((k) => stall.goods[k] > 0);
+  if (inStockIds.length === 0) return;
+
+  // Chọn món theo TÍN HIỆU CHỢ: khách chuộng hàng "hot" thay vì random đều
+  const signals = getMarketSignals();
+  const weights = inStockIds.map((id) => {
+    const def = GOODS.find((g) => g.id === id);
+    return def ? getDemandMultiplier(def.category, signals) : 0.5;
+  });
+  const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+  let roll = Math.random() * totalWeight;
+  let chosenId = inStockIds[inStockIds.length - 1];
+  for (let i = 0; i < inStockIds.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) { chosenId = inStockIds[i]; break; }
+  }
+
+  const goodDef = GOODS.find((g) => g.id === chosenId);
+  if (!goodDef) return;
+
+  const pf = stall.priceFactor !== undefined ? stall.priceFactor : 1;
+  const walkAwayChance = pf > 1.0 ? Math.min(0.65, (pf - 1.0) * 0.75) : 0;
+  if (Math.random() < walkAwayChance) {
+    customer.bubble = pf >= 1.5 ? "Sao đắt thế?! Qua sạp kia mua!" : "H trời, giá này căng quá, thôi chừa tiền lại!";
+    customer.bubbleTimer = 4000;
+    return;
+  }
+
+  const earnCap = STALL_EARN_CAP_PER_DAY[stall.level] || 20000;
+  const todayEarn0 = stall.dailyEarnings && stall.dailyEarningsDay === getDay() ? stall.dailyEarnings : 0;
+  if (todayEarn0 >= earnCap) {
+    customer.bubble = "Sạp này hôm nay đông khách quá! Mai quay lại nhé!";
+    customer.bubbleTimer = 4000;
+    return;
+  }
+
+  const comboChance = 0.45 + (pf < 1.0 ? (1.0 - pf) * 0.5 : 0);
+  const buyQty = (stall.goods[chosenId] >= 2 && Math.random() < comboChance) ? 2 : 1;
+
+  // ~38% khách đòi trả giá — chủ sạp online mới có kèo
+  if (stall.owner && players[stall.owner] && Math.random() < HAGGLE_CONFIG.chance) {
+    haggleSeq += 1;
+    const haggleId = `hg_${Date.now().toString(36)}_${haggleSeq}`;
+    pendingHaggles.set(haggleId, {
+      id: haggleId,
+      stallId: stall.id,
+      owner: stall.owner,
+      customerName: customer.name,
+      goodId: goodDef.id,
+      qty: buyQty,
+      roomId: players[stall.owner].roomId || "public-1",
+      createdAt: Date.now(),
+      windowMs: HAGGLE_CONFIG.windowMs,
+    });
+    customer.bubble = "Bớt giá cho cháu đi bà con ơi! 🙏";
+    customer.bubbleTimer = HAGGLE_CONFIG.windowMs;
+    customer.state = "haggling";
+    customer.actionTimer = HAGGLE_CONFIG.windowMs + 1200;
+    pushHaggleRequest(pendingHaggles.get(haggleId), stall, goodDef, buyQty, customer);
+    return;
+  }
+
+  finalizeSale(stall, goodDef, buyQty, customer, 1, {});
 }
 
 function popEvents() {
@@ -1049,6 +1446,7 @@ function buyWholesale(nickname, goodId, amount = 1) {
 
   unlockCollectionItem(nickname, `food_${goodId}`);
   progressPlayerQuest(nickname, "buy_wholesale", amount);
+  addExp(nickname, 20 * amount, "Mua sỉ hàng hóa");
   const updated = upsertPlayer(nickname, { money: player.money, inventory: player.inventory });
   player.quests = updated.quests;
 
@@ -1076,15 +1474,21 @@ function rentStall(nickname, stallId, customName) {
     return { ok: false, error: "Bạn đã làm chủ sạp này rồi!" };
   }
 
-  if (player.money < STALL_COST) {
-    return { ok: false, error: `Không đủ ${STALL_COST.toLocaleString()}đ để thuê sạp!` };
+  // Sạp đầu tiên miễn phí cho tân thủ đang học việc
+  const isStarterFree = (!player.stalls || player.stalls.length === 0) && !player.tutorialCompleted;
+  const actualCost = isStarterFree ? 0 : STALL_COST;
+
+  if (player.money < actualCost) {
+    return { ok: false, error: `Không đủ ${actualCost.toLocaleString()}đ để thuê sạp!` };
   }
 
-  player.money -= STALL_COST;
+  player.money -= actualCost;
   stall.owner = nickname;
   if (customName && customName.trim()) {
     stall.name = sanitizeText(customName, 28) || stall.name;
   }
+  saveStall(stall);
+  addExp(nickname, 60, "Mở sạp khai trương");
 
   if (!player.stalls.includes(stallId)) {
     player.stalls.push(stallId);
@@ -1125,6 +1529,8 @@ function stockGood(nickname, stallId, goodId, amount = 1) {
   if (player.inventory[goodId] <= 0) delete player.inventory[goodId];
 
   stall.goods[goodId] = (stall.goods[goodId] || 0) + amount;
+  saveStall(stall);
+  addExp(nickname, 8 * amount, "Bày hàng lên mẹt");
 
   progressPlayerQuest(nickname, "stock_goods", amount);
   const updated = upsertPlayer(nickname, { inventory: player.inventory });
@@ -1138,8 +1544,50 @@ function stockGood(nickname, stallId, goodId, amount = 1) {
   };
 }
 
-function withdrawGood(nickname, stallId, goodId, amount = 1) {
+// Bày toàn bộ kho lên sạp 1-chạm (ECONOMY 2.0 / tutorial bước 2)
+function stockAllGoods(nickname, stallId) {
   const player = players[nickname];
+  if (!player) return { ok: false, error: "Người chơi không hợp lệ" };
+  const stall = stalls[stallId];
+  if (!stall) return { ok: false, error: "Sạp hàng không tồn tại" };
+  if (stall.owner !== nickname) return { ok: false, error: "Bạn không phải chủ sạp này" };
+
+  const maxCapacity = stall.level === 1 ? 60 : stall.level === 2 ? 180 : 400;
+  let currentTotal = Object.values(stall.goods).reduce((a, b) => a + b, 0);
+  let totalStocked = 0;
+
+  for (const goodId of Object.keys(player.inventory)) {
+    const qty = Number(player.inventory[goodId]) || 0;
+    if (qty <= 0) continue;
+    const canAdd = Math.min(qty, maxCapacity - currentTotal);
+    if (canAdd <= 0) break;
+
+    stall.goods[goodId] = (stall.goods[goodId] || 0) + canAdd;
+    player.inventory[goodId] -= canAdd;
+    if (player.inventory[goodId] <= 0) delete player.inventory[goodId];
+
+    currentTotal += canAdd;
+    totalStocked += canAdd;
+  }
+
+  if (totalStocked > 0) {
+    saveStall(stall);
+    addExp(nickname, 8 * totalStocked, "Bày hàng lên mẹt");
+    progressPlayerQuest(nickname, "stock_goods", totalStocked);
+    const updated = upsertPlayer(nickname, { inventory: player.inventory });
+    player.quests = updated.quests;
+  }
+
+  return {
+    ok: true,
+    totalStocked,
+    stall: getStallData(stallId),
+    inventory: player.inventory,
+    quests: player.quests,
+  };
+}
+
+function withdrawGood(nickname, stallId, goodId, amount = 1) {  const player = players[nickname];
   if (!player) return { ok: false, error: "Người chơi không hợp lệ" };
   const stall = stalls[stallId];
   if (!stall) return { ok: false, error: "Sạp hàng không tồn tại" };
@@ -1153,6 +1601,7 @@ function withdrawGood(nickname, stallId, goodId, amount = 1) {
   if (stall.goods[goodId] <= 0) delete stall.goods[goodId];
 
   player.inventory[goodId] = (player.inventory[goodId] || 0) + amount;
+  saveStall(stall);
   upsertPlayer(nickname, { inventory: player.inventory });
 
   return {
@@ -1172,12 +1621,19 @@ function upgradeStall(nickname, stallId) {
   const cost = STALL_UPGRADE_COSTS[nextLevel];
   if (!cost) return { ok: false, error: "Sạp đã đạt cấp tối đa (Cấp 3 Đại Cát)!" };
 
+  const needLevel = nextLevel === 2 ? 3 : 5;
+  if (getPlayerLevel(nickname) < needLevel) {
+    return { ok: false, error: `Nâng sạp Cấp ${nextLevel} mở khóa ở Cấp ${needLevel}. Bán hàng thêm cho kinh nghiệm nhé!`, needLevel };
+  }
+
   if (player.money < cost) {
     return { ok: false, error: `Cần ${cost.toLocaleString()}đ để nâng cấp!` };
   }
 
   player.money -= cost;
   stall.level = nextLevel;
+  saveStall(stall);
+  addExp(nickname, 120, `Nâng cấp sạp lên Cấp ${nextLevel}`);
 
   progressPlayerQuest(nickname, "upgrade_stall", 1);
   const updated = upsertPlayer(nickname, { money: player.money });
@@ -1199,12 +1655,16 @@ function hireStaff(nickname, stallId) {
   if (!stall || stall.owner !== nickname) return { ok: false, error: "Bạn không phải chủ sạp này" };
 
   if (stall.hasStaff) return { ok: false, error: "Sạp này đã có người phụ bán rồi!" };
+  if (getPlayerLevel(nickname) < 4) {
+    return { ok: false, error: "Thuê phụ quán mở khóa ở Cấp 4 — hãy bán hàng chăm chỉ lên cấp đã!", needLevel: 4 };
+  }
   if (player.money < HIRE_STAFF_COST) {
     return { ok: false, error: `Cần ${HIRE_STAFF_COST.toLocaleString()}đ để thuê phụ quán!` };
   }
 
   player.money -= HIRE_STAFF_COST;
   stall.hasStaff = true;
+  saveStall(stall);
 
   progressPlayerQuest(nickname, "hire_worker", 1);
   const updated = upsertPlayer(nickname, { money: player.money });
@@ -1455,6 +1915,13 @@ function goFishing(nickname) {
   const p = players[nickname];
   if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
 
+  // Cooldown 5 giây: cá cần thời gian cắn câu, chặn spam cần
+  const now = Date.now();
+  if (now - (p.lastFishingAt || 0) < 5000) {
+    return { ok: false, error: "Cá đang cảnh giác, hãy đợi một chút rồi thả câu tiếp nhé." };
+  }
+  p.lastFishingAt = now;
+
   const roll = Math.random();
   let caughtFish;
   if (roll < 0.06) caughtFish = FISH_TYPES[4];
@@ -1463,9 +1930,15 @@ function goFishing(nickname) {
   else if (roll < 0.78) caughtFish = FISH_TYPES[0];
   else caughtFish = FISH_TYPES[2];
 
-  p.money += caughtFish.price;
+  // Trần kiếm tiền/ngày từ câu cá — chống farm vô hạn
+  const granted = grantActivityReward(nickname, "fishing", caughtFish.price, 15000);
+  if (granted <= 0) {
+    return { ok: false, error: "Hôm nay bạn đã câu đủ nhiều rồi! Ngày mai cá lại cắn câu, quay lại nhé 🎣", dailyCapped: true };
+  }
+
   unlockCollectionItem(nickname, `fish_${caughtFish.id}`);
   progressPlayerQuest(nickname, "go_fishing", 1);
+  addExp(nickname, 40, "Câu cá bến sông");
   const updated = upsertPlayer(nickname, { money: p.money });
   p.quests = updated.quests;
 
@@ -2126,6 +2599,7 @@ function getStallData(stallId) {
     goods: s.goods,
     level: s.level,
     hasStaff: s.hasStaff,
+    priceFactor: s.priceFactor !== undefined ? s.priceFactor : 1,
     earnings: s.earnings,
     color: s.color,
     category: s.category,
@@ -2201,8 +2675,56 @@ function getSnapshot(roomId = "public-1", festivalOverride = null) {
     serverTime,
     day: getDay(),
     timeOfDay: getTimeOfDay(),
+    marketSignals: getMarketSignals(),
     leaderboard: getLeaderboard(8),
   };
+}
+
+// === TUTORIAL 2.0 (port từ bản local): bán được món đầu tiên trong ~60 giây ===
+function completeTutorialStep(nickname, step) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+  if (p.tutorialCompleted) return { ok: true, alreadyCompleted: true, money: p.money, tutorialCompleted: true };
+
+  step = Number(step) || 1;
+  p.tutorialStep = Math.max(p.tutorialStep || 1, step + 1);
+
+  let reward = 500;
+  if (step === 2) reward = 1000;
+  else if (step === 3) reward = 1200;
+  else if (step >= 4) reward = 1500;
+
+  p.money = (p.money || 0) + reward;
+
+  if (step >= 4) {
+    p.tutorialCompleted = true;
+    unlockCollectionItem(nickname, "souvenir_conical_hat");
+  }
+
+  addExp(nickname, step * 50, "Hoàn thành bước hướng dẫn");
+  upsertPlayer(nickname, {
+    money: p.money,
+    tutorialCompleted: p.tutorialCompleted,
+    tutorialStep: p.tutorialStep,
+  });
+
+  return {
+    ok: true,
+    step,
+    nextStep: p.tutorialStep,
+    tutorialCompleted: p.tutorialCompleted,
+    reward,
+    money: p.money,
+  };
+}
+
+function skipTutorial(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+  p.tutorialCompleted = true;
+  p.tutorialStep = 5;
+  upsertPlayer(nickname, { tutorialCompleted: true, tutorialStep: 5 });
+  return { ok: true, tutorialCompleted: true };
 }
 
 module.exports = {
@@ -2218,9 +2740,24 @@ module.exports = {
   buyWholesale,
   rentStall,
   stockGood,
+  stockAllGoods,
   withdrawGood,
   upgradeStall,
   hireStaff,
+  // === ECONOMY 2.0 + TUTORIAL (hợp nhất từ bản local) ===
+  getMarketSignals,
+  setStallPrice,
+  resolveHaggle,
+  getPlayerLevel,
+  calculateLevel,
+  addExp,
+  completeTutorialStep,
+  skipTutorial,
+  pendingHaggles,
+  HAGGLE_CONFIG,
+  STALL_RENT_PER_DAY,
+  STAFF_WAGE_PER_DAY,
+  LEVEL_UNLOCKS,
   spinGacha,
   placeBauCuaBet,
   toggleSitTeaTable,

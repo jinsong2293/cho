@@ -147,6 +147,17 @@ db.exec(`
     recent_chat TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f','now'))
   );
+
+  CREATE TABLE IF NOT EXISTS town_stalls (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    owner TEXT DEFAULT NULL,
+    goods TEXT NOT NULL DEFAULT '{}',
+    earnings INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    has_staff INTEGER NOT NULL DEFAULT 0,
+    price_factor REAL NOT NULL DEFAULT 1
+  );
 `);
 
 // Safe migrations for existing databases
@@ -162,6 +173,10 @@ const MIGRATION_COLUMNS = [
   `ALTER TABLE players ADD COLUMN house_config TEXT NOT NULL DEFAULT '{"privacy":"public","wall":"#fef08a","furniture":"Sập Gụ Tủ Chè","tree":"Hoa Mai Vàng","guestbook":[]}'`,
   `ALTER TABLE players ADD COLUMN muted_until INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE players ADD COLUMN banned_until INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE players ADD COLUMN exp INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE players ADD COLUMN activity_rewards TEXT NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE players ADD COLUMN tutorial_step INTEGER NOT NULL DEFAULT 1`,
+  `ALTER TABLE town_stalls ADD COLUMN price_factor REAL NOT NULL DEFAULT 1`,
 ];
 
 MIGRATION_COLUMNS.forEach((sql) => {
@@ -322,8 +337,9 @@ function getPlayer(nickname) {
   const row = db
     .prepare(
       `SELECT nickname, money, inventory, stalls, quests, customization, friends,
-              tutorial_completed, token_hash, recovery_code, blocked_users,
-              affinity, social_title, collection, house_config, muted_until, banned_until
+              tutorial_completed, tutorial_step, token_hash, recovery_code, blocked_users,
+              affinity, social_title, collection, house_config, muted_until, banned_until,
+              exp, activity_rewards
        FROM players WHERE nickname = ?`
     )
     .get(nickname);
@@ -432,6 +448,16 @@ function getPlayer(nickname) {
     mutedUntil: Number(row.muted_until) || 0,
     bannedUntil: Number(row.banned_until) || 0,
     tutorialCompleted: row.tutorial_completed === 1,
+    tutorialStep: Math.max(1, Number(row.tutorial_step) || 1),
+    exp: Math.max(0, Number(row.exp) || 0),
+    activityRewards: (() => {
+      try {
+        const parsed = JSON.parse(row.activity_rewards || "{}");
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (_) {
+        return {};
+      }
+    })(),
   };
 }
 
@@ -461,6 +487,9 @@ function upsertPlayer(nickname, patch = {}) {
           guestbook: [],
         },
     tutorialCompleted: sel ? sel.tutorialCompleted : false,
+    tutorialStep: sel ? sel.tutorialStep || 1 : 1,
+    exp: sel ? sel.exp || 0 : 0,
+    activityRewards: sel ? sel.activityRewards || {} : {},
     tokenHash: existingRow ? existingRow.token_hash : null,
     recoveryCode: existingRow ? existingRow.recovery_code : null,
     mutedUntil: existingRow ? Number(existingRow.muted_until) || 0 : 0,
@@ -478,6 +507,9 @@ function upsertPlayer(nickname, patch = {}) {
   if (patch.collection !== undefined) base.collection = patch.collection;
   if (patch.houseConfig !== undefined) base.houseConfig = patch.houseConfig;
   if (patch.tutorialCompleted !== undefined) base.tutorialCompleted = patch.tutorialCompleted;
+  if (patch.tutorialStep !== undefined) base.tutorialStep = Math.max(1, Math.floor(patch.tutorialStep));
+  if (patch.exp !== undefined) base.exp = Math.max(0, Math.floor(patch.exp));
+  if (patch.activityRewards !== undefined) base.activityRewards = patch.activityRewards;
   if (patch.tokenHash !== undefined) base.tokenHash = patch.tokenHash;
   if (patch.recoveryCode !== undefined) base.recoveryCode = patch.recoveryCode;
   if (patch.mutedUntil !== undefined) base.mutedUntil = patch.mutedUntil;
@@ -491,7 +523,8 @@ function upsertPlayer(nickname, patch = {}) {
       `UPDATE players
        SET money = ?, inventory = ?, stalls = ?, quests = ?, customization = ?, friends = ?,
            blocked_users = ?, affinity = ?, social_title = ?, collection = ?, house_config = ?,
-           tutorial_completed = ?, token_hash = COALESCE(?, token_hash),
+           tutorial_completed = ?, tutorial_step = ?, exp = ?, activity_rewards = ?,
+           token_hash = COALESCE(?, token_hash),
            recovery_code = COALESCE(?, recovery_code), muted_until = ?, banned_until = ?, updated_at = ?
        WHERE nickname = ?`
     ).run(
@@ -507,6 +540,9 @@ function upsertPlayer(nickname, patch = {}) {
       JSON.stringify(base.collection),
       JSON.stringify(base.houseConfig),
       base.tutorialCompleted ? 1 : 0,
+      base.tutorialStep,
+      base.exp,
+      JSON.stringify(base.activityRewards),
       base.tokenHash,
       base.recoveryCode,
       base.mutedUntil,
@@ -519,8 +555,9 @@ function upsertPlayer(nickname, patch = {}) {
       `INSERT INTO players (
          nickname, money, inventory, stalls, quests, customization, friends,
          blocked_users, affinity, social_title, collection, house_config,
-         tutorial_completed, token_hash, recovery_code, muted_until, banned_until, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         tutorial_completed, tutorial_step, exp, activity_rewards,
+         token_hash, recovery_code, muted_until, banned_until, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       nickname,
       base.money,
@@ -535,6 +572,9 @@ function upsertPlayer(nickname, patch = {}) {
       JSON.stringify(base.collection),
       JSON.stringify(base.houseConfig),
       base.tutorialCompleted ? 1 : 0,
+      base.tutorialStep,
+      base.exp,
+      JSON.stringify(base.activityRewards),
       base.tokenHash,
       base.recoveryCode || generateRecoveryCode(),
       base.mutedUntil,
@@ -548,6 +588,51 @@ function upsertPlayer(nickname, patch = {}) {
     ...base,
     socialTitle,
   };
+}
+
+// === LƯU BỀN SẠP HÀNG (port từ bản local): trước đây restart là mất chủ sạp/hàng/tiền thu ===
+function loadStalls() {
+  try {
+    return db.prepare("SELECT * FROM town_stalls").all().map((r) => {
+      let goods = {};
+      try { goods = JSON.parse(r.goods || "{}"); } catch (_) {}
+      return {
+        id: r.id,
+        name: r.name,
+        owner: r.owner || null,
+        goods,
+        earnings: Number(r.earnings) || 0,
+        level: Math.max(1, Number(r.level) || 1),
+        hasStaff: Boolean(r.has_staff),
+        priceFactor: Math.min(1.8, Math.max(0.6, Number(r.price_factor) || 1)),
+      };
+    });
+  } catch (err) {
+    console.error("[persistence.loadStalls]", err.message);
+    return [];
+  }
+}
+
+function saveStall(stall) {
+  if (!stall || !stall.id) return false;
+  try {
+    db.prepare(
+      `INSERT INTO town_stalls (id, name, owner, goods, earnings, level, has_staff, price_factor)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET name=excluded.name, owner=excluded.owner,
+         goods=excluded.goods, earnings=excluded.earnings, level=excluded.level,
+         has_staff=excluded.has_staff, price_factor=excluded.price_factor`
+    ).run(
+      stall.id, String(stall.name || stall.id), stall.owner || null,
+      JSON.stringify(stall.goods || {}), Math.max(0, Math.floor(Number(stall.earnings) || 0)),
+      Math.max(1, Math.floor(Number(stall.level) || 1)), stall.hasStaff ? 1 : 0,
+      Math.min(1.8, Math.max(0.6, Number(stall.priceFactor) || 1))
+    );
+    return true;
+  } catch (err) {
+    console.error("[persistence.saveStall]", err.message);
+    return false;
+  }
 }
 
 function createReport(reporter, target, reason, recentChat = []) {
@@ -617,6 +702,8 @@ module.exports = {
   getLeaderboard,
   progressPlayerQuest,
   claimPlayerQuest,
+  loadStalls,
+  saveStall,
   getSocialTitle,
   hashToken,
   generatePlayerToken,
