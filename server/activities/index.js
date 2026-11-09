@@ -254,6 +254,16 @@ function tickActivities(roomId = "public-1", dtMs = 50, onRoomEvent) {
       bus.stopIndex = bus.nextStopIndex;
       bus.nextStopIndex = (bus.stopIndex + 1) % BUS_STOPS.length;
       bus.dwellTimerMs = 3500; // Dừng đón khách 3.5 giây tại trạm
+      // Thông báo cho cả phòng: xe đã tới trạm — ai chờ thì ra lên xe
+      const stopDef = BUS_STOPS[bus.stopIndex];
+      onRoomEvent({
+        type: "bus_arrived",
+        stopIndex: bus.stopIndex,
+        stopName: (stopDef && stopDef.name && stopDef.name.vi) || "Trạm",
+        x: bus.x,
+        z: bus.z,
+        message: `🚌 Xe Buýt Xanh đã tới ${(stopDef && stopDef.name && stopDef.name.vi) || "trạm"} — dừng 3 giây đón khách!`,
+      });
     }
   }
 
@@ -466,10 +476,17 @@ function toggleRideGreenBus(roomId = "public-1", nickname) {
   return { ok: true, riding: true, bus };
 }
 
+// Vị trí xe buýt hiện tại (cho world.js đồng bộ hành khách đi xe)
+function getBusState(roomId = "public-1") {
+  const state = ensureRoomActivities(roomId);
+  return state.greenBus;
+}
+
 module.exports = {
   ensureRoomActivities,
   tickActivities,
   getActivitiesSnapshot,
+  getBusState,
   joinGoldenHour,
   performOnStage,
   cheerStage,

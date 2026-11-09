@@ -431,6 +431,7 @@ initCustomers();
 
 let serverTime = 0;
 let eventsQueue = [];
+let riderMoves = []; // hành khách xe buýt: pos cần phát cho người khác thấy
 
 // Nhịp ngày — Mỗi khung giờ một chỗ nóng (Phase 10.1)
 let currentHotspotPhase = "morning";
@@ -524,8 +525,8 @@ let bauCuaRound = {
 
 // Bàn Trà Đá Vỉa Hè Bờ Sông (Tọa độ x: -8, z: 27)
 const TEA_TABLE = {
-  x: -8,
-  z: 27,
+  x: -16,
+  z: 28,
   seatedPlayers: [],
 };
 
@@ -699,6 +700,8 @@ function leaveWorld(nickname) {
 function updatePlayerMove(nickname, data) {
   const p = players[nickname];
   if (!p || !data || !data.pos) return null;
+  // Đang đi xe buýt: server điều khiển vị trí, bỏ qua input di chuyển
+  if (p.ridingBus) return null;
 
   const now = Date.now();
   const dtSec = Math.max(0.016, (now - (p.lastMoveAt || now)) / 1000);
@@ -1011,6 +1014,17 @@ function updateWorld(dt) {
         timer: 20000,
         time: now,
       });
+    }
+  }
+
+  // XE BUÝT XANH chở khách: hành khách đi cùng xe, hạ bước xuống là rời xe
+  for (const p of Object.values(players)) {
+    if (!p.ridingBus) continue;
+    const bus = activitiesManager.getBusState(p.roomId || "public-1");
+    if (bus) {
+      p.pos.x = Number((bus.x + 0.9).toFixed(2));
+      p.pos.z = Number((bus.z + 0.6).toFixed(2));
+      riderMoves.push({ nickname: p.nickname, pos: { ...p.pos }, rot: p.rot || 0, hoverboard: false, roomId: p.roomId || "public-1" });
     }
   }
 
@@ -1426,6 +1440,12 @@ function popEvents() {
   return out;
 }
 
+function popRiderMoves() {
+  const out = riderMoves;
+  riderMoves = [];
+  return out;
+}
+
 // ---- Các hành động người chơi ----
 
 function buyWholesale(nickname, goodId, amount = 1) {
@@ -1736,6 +1756,15 @@ function spinGacha(nickname) {
 function placeBauCuaBet(nickname, animalId, amount) {
   const p = players[nickname];
   if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+  // PHẢI ĐỨNG TẠI SỚI: đặt cược từ xa nhà cái không nhận
+  const sớiDist = Math.hypot(p.pos.x - (-48), p.pos.z - (-16));
+  if (sớiDist > 12) {
+    return {
+      ok: false,
+      error: "🎲 Bạn cần đến Lầu Hội Bầu Cua Tôm Cá (phía Tây hồ) mới đặt cược được! Dùng nút Đi Tới để tới nhanh.",
+      needPosition: { x: -48, z: -16 },
+    };
+  }
   if (bauCuaRound.state !== "betting") {
     return { ok: false, error: "Nhà cái đang lắc bát hoặc công bố kết quả, hãy chờ vòng sau!" };
   }
@@ -1776,6 +1805,15 @@ function toggleSitTeaTable(nickname, seatId = null) {
     p.seatId = null;
     return { ok: true, seated: false, table: TEA_TABLE, seats: seatsManager.getSeatsSnapshot(p.roomId) };
   } else {
+    // PHẢI ĐẾN QUÁN: ngồi trà đá từ xa là vô lý (bàn trà thật ở (-16, 28))
+    const teaDist = Math.hypot(p.pos.x - TEA_TABLE.x, p.pos.z - TEA_TABLE.z);
+    if (teaDist > 7.5) {
+      return {
+        ok: false,
+        error: "☕ Bạn cần đến Quán Trà Đá Bờ Sông (phía Tây Nam) mới ngồi nghỉ được! Dùng nút Đi Tới để tới nhanh.",
+        needPosition: { x: TEA_TABLE.x, z: TEA_TABLE.z },
+      };
+    }
     const seatRes = seatsManager.sitOnSeat(p.roomId, nickname, seatId, p.pos);
     if (seatRes.ok && seatRes.seat) {
       p.seatId = seatRes.seat.id;
@@ -1787,7 +1825,12 @@ function toggleSitTeaTable(nickname, seatId = null) {
       TEA_TABLE.seatedPlayers.push(nickname);
     }
 
-    p.money += 200;
+    // Thưởng chỉ lần ngồi đầu trong 60 giây — hết farm toggle ngồi/đứng
+    const now = Date.now();
+    if (now - (p.lastTeaRewardAt || 0) > 60000) {
+      p.money += 200;
+      p.lastTeaRewardAt = now;
+    }
     addAffinity(nickname, 3, "Ngồi ghế trà đá giao lưu");
     unlockCollectionItem(nickname, "food_tra_da");
     progressPlayerQuest(nickname, "sit_tea_together", 1);
@@ -1914,6 +1957,16 @@ const FISH_TYPES = [
 function goFishing(nickname) {
   const p = players[nickname];
   if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+
+  // PHẢI ĐỨNG TẠI BẾN SÔNG: câu cá trên đất khô là vô lý
+  const pierDist = Math.hypot(p.pos.x - 0, p.pos.z - 34);
+  if (pierDist > 10.5) {
+    return {
+      ok: false,
+      error: "🎣 Bạn cần đến Bến Sông & Cầu Tàu Gỗ (phía Nam, sau chợ) mới thả câu được! Dùng nút Đi Tới để tới nhanh.",
+      needPosition: { x: 0, z: 34 },
+    };
+  }
 
   // Cooldown 5 giây: cá cần thời gian cắn câu, chặn spam cần
   const now = Date.now();
@@ -2162,7 +2215,23 @@ function kickShuttlecock(nickname) {
   const p = players[nickname];
   if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
 
+  // PHẢI ĐỨNG TẠI SÂN: hết cảnh "đứng giữa chợ đá cầu vẫn có tiền"
+  const courtDist = Math.hypot(p.pos.x - SHUTTLECOCK_COURT.x, p.pos.z - SHUTTLECOCK_COURT.z);
+  if (courtDist > 7) {
+    return {
+      ok: false,
+      error: "🪶 Bạn cần đến Đấu Trường Đá Cầu Kiểng (phía Đông, gần Khu Dân Cư) mới tâng cầu được! Dùng nút Đi Tới để tới nhanh.",
+      needPosition: { x: SHUTTLECOCK_COURT.x, z: SHUTTLECOCK_COURT.z },
+    };
+  }
+
+  // Nhịp đá hợp lý: 1.5 giây/cú, không spam
   const now = Date.now();
+  if (now - (p.lastKickAt || 0) < 1500) {
+    return { ok: false, error: "Vừa tung cú vừa rồi, thở đã rồi tâng tiếp nhé!" };
+  }
+  p.lastKickAt = now;
+
   if (now - SHUTTLECOCK_COURT.lastKickTime > 20000) {
     SHUTTLECOCK_COURT.combo = 1;
   } else {
@@ -2727,6 +2796,63 @@ function skipTutorial(nickname) {
   return { ok: true, tutorialCompleted: true };
 }
 
+// === XE BUÝT XANH: lên/xuống xe có gate vị trí, server di chuyển hành khách ===
+function toggleBusRide(nickname) {
+  const p = players[nickname];
+  if (!p) return { ok: false, error: "Người chơi không hợp lệ!" };
+
+  const bus = activitiesManager.getBusState(p.roomId || "public-1");
+  if (!bus) return { ok: false, error: "Xe buýt chưa khởi hành!" };
+
+  if (p.ridingBus) {
+    // Xuống xe tại vị trí xe đang đứng
+    p.ridingBus = false;
+    p.pos.x = Number((bus.x + 1.6).toFixed(2));
+    p.pos.z = Number((bus.z + 1.2).toFixed(2));
+    const idx = bus.passengers.indexOf(nickname);
+    if (idx >= 0) bus.passengers.splice(idx, 1);
+    eventsQueue.push({
+      type: "bus_ride",
+      roomId: p.roomId,
+      nickname,
+      riding: false,
+      message: `🚏 ${nickname} đã xuống Xe Buýt Xanh tại trạm.`,
+      time: Date.now(),
+    });
+    return { ok: true, riding: false, pos: { ...p.pos } };
+  }
+
+  // Lên xe: phải đứng gần xe (hoặc gần trạm khi xe đang dừng đón)
+  const dist = Math.hypot(p.pos.x - bus.x, p.pos.z - bus.z);
+  if (dist > 8) {
+    const stops = [
+      { x: 0, z: 18, name: "Quảng Trường Chợ Trung Tâm" },
+      { x: -75, z: 12, name: "Đại Công Viên Hồ Sen" },
+      { x: 0, z: -80, name: "Đại Lộ Ẩm Thực Đêm" },
+    ];
+    const nearest = stops.reduce((a, b) => (
+      Math.hypot(p.pos.x - a.x, p.pos.z - a.z) < Math.hypot(p.pos.x - b.x, p.pos.z - b.z) ? a : b
+    ));
+    return {
+      ok: false,
+      error: `🚌 Xe buýt đang ở trạm khác (cách ${Math.round(dist)}m). Ra trạm gần nhất: ${nearest.name} — hoặc chờ xe tới đón!`,
+      needPosition: { x: bus.x, z: bus.z },
+    };
+  }
+
+  p.ridingBus = true;
+  if (!bus.passengers.includes(nickname)) bus.passengers.push(nickname);
+  eventsQueue.push({
+    type: "bus_ride",
+    roomId: p.roomId,
+    nickname,
+    riding: true,
+    message: `🚌 ${nickname} vừa lên Xe Buýt Xanh tham quan thị trấn!`,
+    time: Date.now(),
+  });
+  return { ok: true, riding: true };
+}
+
 module.exports = {
   updateWorld,
   joinWorld,
@@ -2753,6 +2879,7 @@ module.exports = {
   addExp,
   completeTutorialStep,
   skipTutorial,
+  toggleBusRide,
   pendingHaggles,
   HAGGLE_CONFIG,
   STALL_RENT_PER_DAY,
@@ -2785,6 +2912,7 @@ module.exports = {
   toggleBlockUser,
   getSnapshot,
   popEvents,
+  popRiderMoves,
   getStallData,
   getDay,
   getTimeOfDay,

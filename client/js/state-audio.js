@@ -473,6 +473,19 @@ function updateContextAction() {
     return;
   }
 
+  // XE BUÝT XANH: lên/xuống khi đứng gần xe
+  const busState = (typeof worldState !== 'undefined') && worldState.activities && worldState.activities.greenBus;
+  if (busState && typeof busState.x === 'number') {
+    if (Math.hypot(px - busState.x, pz - busState.z) <= 7.5) {
+      if (myPlayer.ridingBus) {
+        applyContextUI('bus', '🚏', 'Xuống Xe Buýt (E)');
+      } else {
+        applyContextUI('bus', '🚌', 'Lên Xe Buýt (E)');
+      }
+      return;
+    }
+  }
+
   applyContextUI('chat', '💬', 'Trò Chuyện (Enter)');
 }
 
@@ -507,6 +520,18 @@ function handleContextAction() {
     openCommunityEventsModal();
   } else if (currentContextActionType === 'house') {
     openHouseModal();
+  } else if (currentContextActionType === 'bus') {
+    if (socket) {
+      socket.emit('toggleGreenBus', {}, (res) => {
+        if (res && res.ok) {
+          myPlayer.ridingBus = res.riding;
+          if (res.riding) showToast('🚌 Xe Buýt Xanh khởi hành! Ngồi nghỉ ngơi ngắm thị trấn, bấm E để xuống xe.');
+          else showToast('🚏 Đã xuống xe buýt an toàn!');
+        } else {
+          showToast((res && res.error) || 'Không bắt được xe buýt!');
+        }
+      });
+    }
   } else {
     const chatInput = document.getElementById('chat-input');
     if (chatInput) chatInput.focus();

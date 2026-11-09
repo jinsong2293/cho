@@ -469,6 +469,11 @@ function joinGame() {
     if (window.EconomyUI && window.EconomyUI.handleWorldEvent(ev) && ev.type !== 'customer_buy') {
       return;
     }
+    if (ev.type === 'bus_arrived') {
+      addChatMessage('Xe Buýt Xanh', ev.message, 'system', 'system');
+      showToast(ev.message);
+      return;
+    }
     if (ev.type === 'customer_buy') {
       const isMyStall = ev.owner === myPlayer.nickname;
       addChatMessage(
@@ -2240,7 +2245,46 @@ function renderHouseGuestbook() {
 function openHouseModal() {
   switchHouseTab('build');
   openModal('modal-house');
+  renderHouseTravelButtons();
 }
+
+// ECONOMY 2.0: "Về Nhà" & "Mời Bạn" — nhà mua xong phải thấy được và có khách tới chơi
+function renderHouseTravelButtons() {
+  const anchor = document.getElementById('house-travel-buttons');
+  if (!anchor) return;
+  const hasHouse = myPlayer.houseConfig && (myPlayer.houseConfig.level || 0) > 0;
+  anchor.style.display = hasHouse ? 'flex' : 'none';
+}
+
+function teleportHome() {
+  const hasHouse = myPlayer.houseConfig && (myPlayer.houseConfig.level || 0) > 0;
+  if (!hasHouse) {
+    showToast('🏠 Bạn chưa có nhà — mở tab Xây Nhà để mua đất xây nhà nhé!');
+    return;
+  }
+  closeModal('modal-house');
+  myPlayer.pos = { x: 48, z: 24 };
+  myPlayer.ridingBus = false;
+  if (socket) socket.emit('move', { pos: myPlayer.pos, rot: myPlayer.rot, teleportAllowed: true });
+  if (typeof resetCameraToPlayer === 'function') resetCameraToPlayer();
+  showToast('🏡 Đã về Khu Dân Cư Phố Mới — căn nhà của bạn ở ngay đây!');
+}
+
+function inviteFriendsHome() {
+  const hasHouse = myPlayer.houseConfig && (myPlayer.houseConfig.level || 0) > 0;
+  if (!hasHouse) {
+    showToast('🏠 Bạn chưa có nhà — mua đất xây nhà trước đã nhé!');
+    return;
+  }
+  if (!socket) return;
+  socket.emit('chat_message', {
+    msg: `🏡 ${myPlayer.nickname} mời cả phố ghé nhà mới ở Khu Dân Cư Phố Mới (phía Đông, gần Đấu Trường Đá Cầu)! Dùng Đi Tới → Khu Dân Cư để tới chơi!`,
+    channel: 'town',
+  }, () => {});
+  showToast('📣 Đã mời cả thị trấn ghé nhà bạn chơi!');
+}
+window.teleportHome = teleportHome;
+window.inviteFriendsHome = inviteFriendsHome;
 
 function setHousePrivacy(privacy) {
   myHouseData.privacy = privacy;

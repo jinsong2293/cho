@@ -1530,19 +1530,32 @@
           if (root.myPlayer) {
             const prevX = root.myPlayer.pos.x || 0;
             const prevZ = root.myPlayer.pos.z || 0;
-            root.myPlayer.pos.x = cx;
-            root.myPlayer.pos.z = cz;
+            // Nudge tới điểm TRỐNG gần nhất: tâm khu có thể nằm trong collider (lò sới, bàn trà...)
+            // — teleport vào trong tường sẽ bị server đẩy ngược, trông như "Đến Ngay không hoạt động"
+            let cx2 = cx, cz2 = cz;
+            if (root.Colliders && typeof root.Colliders.isColliding === "function") {
+              if (root.Colliders.isColliding(cx, cz, 0.35)) {
+                outer: for (let r = 1; r <= 9; r += 0.5) {
+                  for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
+                    const px = cx + Math.cos(a) * r, pz = cz + Math.sin(a) * r;
+                    if (!root.Colliders.isColliding(px, pz, 0.35)) { cx2 = px; cz2 = pz; break outer; }
+                  }
+                }
+              }
+            }
+            root.myPlayer.pos.x = cx2;
+            root.myPlayer.pos.z = cz2;
             if (root.myPlayer.mesh && root.myPlayer.mesh.group) {
-              root.myPlayer.mesh.group.position.set(cx, 0, cz);
+              root.myPlayer.mesh.group.position.set(cx2, 0, cz2);
             }
             if (root.controls && root.camera) {
-              root.controls.target.set(cx, 1.1, cz);
-              root.camera.position.x += (cx - prevX);
-              root.camera.position.z += (cz - prevZ);
+              root.controls.target.set(cx2, 1.1, cz2);
+              root.camera.position.x += (cx2 - prevX);
+              root.camera.position.z += (cz2 - prevZ);
               root.controls.update();
             }
             if (root.socket) {
-              root.socket.emit("move", { pos: { x: cx, y: 0, z: cz }, rot: root.myPlayer.rot || 0, teleportAllowed: true });
+              root.socket.emit("move", { pos: { x: cx2, y: 0, z: cz2 }, rot: root.myPlayer.rot || 0, teleportAllowed: true });
             }
           }
           if (typeof root.updateZoneBadgeHUD === "function") root.updateZoneBadgeHUD();

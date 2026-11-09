@@ -234,10 +234,15 @@ async function runSmokeTests() {
     assert(nearbyAck.ok && !leakedNearby, "Chat kênh 'Quanh Đây (18m)' KHÔNG rò rỉ tới người chơi đứng cách xa >70m");
 
     // 7. Shuttlecock Kick Test
+    // Luật mới: phải đứng TẠI SÂN ĐÁ CẦU (48,-16) mới tâng được — test di chuyển tới sân trước
+    clientA.emit("move", { pos: { x: 48, z: -16 }, rot: 0, teleportAllowed: true });
+    await new Promise((r) => setTimeout(r, 600));
     const kickRes = await emitAck(clientA, "kickShuttlecock", {});
     assert(kickRes.ok && kickRes.combo >= 1, "Đá cầu (kickShuttlecock) hoạt động và tăng combo (" + kickRes.combo + ")");
 
-    // 8. Authoritative Seat Reservation Test
+    // 8. Authoritative Seat Reservation Test — phải đứng gần ghế (bàn trà ở -17.6, 27.3)
+    await clientA.emit("move", { pos: { x: -17.6, z: 27.3 }, rot: 0, teleportAllowed: true });
+    await new Promise((r) => setTimeout(r, 600));
     const seatRes = await emitAck(clientA, "sitSeat", { seatId: "tea_1" });
     assert(seatRes.ok && seatRes.seated === true, "Hệ thống ghế ngồi chung (sitSeat) xác nhận chỗ ngồi chuẩn xác");
 

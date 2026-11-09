@@ -339,6 +339,12 @@ function gameLoop() {
     _camRight.crossVectors(_camForward, _upVec).normalize();
     _moveDir.set(0, 0, 0);
 
+    // Đang đi Xe Buýt: server điều khiển vị trí — khoá input di chuyển của người chơi
+    if (myPlayer.ridingBus) {
+      _moveDir.set(0, 0, 0);
+      joyInput.magnitude = 0;
+    }
+
     // 1. Điều khiển Bàn phím (WASD / Mũi tên)
     if (keys['KeyW'] || keys['ArrowUp']) _moveDir.add(_camForward);
     if (keys['KeyS'] || keys['ArrowDown']) _moveDir.sub(_camForward);
@@ -407,7 +413,7 @@ function gameLoop() {
       myPlayer.mesh.group.rotation.y += diff * 0.25;
       myPlayer.rot = myPlayer.mesh.group.rotation.y;
 
-      if (time - lastNetworkSend > 50 && socket) {
+      if (time - lastNetworkSend > 50 && socket && !myPlayer.ridingBus) {
         lastNetworkSend = time;
         socket.emit('move', {
           pos: myPlayer.pos,

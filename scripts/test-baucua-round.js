@@ -29,6 +29,9 @@ async function runBauCuaTest() {
   round.bets = {};
   round.roundId = 42;
 
+  // Luật mới: phải đứng tại sới (-45,-16) mới đặt cược được
+  player.pos = { x: -45, z: -16 };
+
   // Test placeBauCuaBet
   const betRes = world.placeBauCuaBet(nickname, "bau", 5000);
   assert.strictEqual(betRes.ok, true, "Đặt cược Bầu Cua thành công");

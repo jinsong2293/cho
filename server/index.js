@@ -676,7 +676,7 @@ io.on("connection", (socket) => {
   socket.on("toggleGreenBus", (_, ack) => {
     if (!userNickname || !world.players[userNickname]) return ack && ack({ ok: false, error: "Chưa đăng nhập!" });
     const p = world.players[userNickname];
-    const res = world.activitiesManager.toggleRideGreenBus(p.roomId, userNickname);
+    const res = world.toggleBusRide(userNickname);
     io.to(p.roomId).emit("activities_sync", world.activitiesManager.getActivitiesSnapshot(p.roomId));
     if (ack) ack(res);
   });
@@ -1163,6 +1163,16 @@ function tick() {
   world.updateWorld(dt);
 
   const events = world.popEvents();
+  // Hành khách xe buýt: phát vị trí mới cho mọi người trong phòng thấy xe chở người
+  const riderMoves = world.popRiderMoves();
+  riderMoves.forEach((rm) => {
+    io.to(rm.roomId || "world").emit("player_move", {
+      nickname: rm.nickname,
+      pos: rm.pos,
+      rot: rm.rot,
+      hoverboard: false,
+    });
+  });
   events.forEach((ev) => {
     // Sự kiện riêng tư (trả giá, kết sổ...) chỉ gửi đúng người nhận, không loa cả phòng
     if (ev.target && world.players[ev.target]) {
